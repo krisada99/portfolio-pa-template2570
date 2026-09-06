@@ -1,0 +1,25 @@
+# ตั้งค่า Netlify — ไม่ต้องแก้อะไร ใช้ได้เลย
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# ปลั๊กอินทางการของ Netlify สำหรับ Next.js
+# ทำให้ส่วนที่ต้องรันฝั่งเซิร์ฟเวอร์ (หลังบ้าน + การดึงข้อมูลสด) ทำงานได้
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# ไฟล์รูปที่มากับเทมเพลตแทบไม่เปลี่ยน แคชได้ยาว
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
