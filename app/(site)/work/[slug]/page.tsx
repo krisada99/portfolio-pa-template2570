@@ -52,7 +52,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
         </div>
       </section>
 
-      <div className="max-w-[1240px] mx-auto px-4 md:px-10 -mt-6 md:-mt-8 pb-12">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-10 -mt-6 md:-mt-8 pb-12 relative z-10">
         <div className="grid lg:grid-cols-[1.65fr_.85fr] gap-6 lg:gap-7 items-start">
           <div className="min-w-0">
             {images.length > 0 && <Gallery images={images} title={work.title} />}
