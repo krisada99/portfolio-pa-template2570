@@ -52,7 +52,7 @@ export default async function SetupPage({
   }
 
   const s = await getStatus()
-  const ready = s.envDb && s.envSecret && s.dbReachable
+  const ready = s.envDb && s.dbReachable
 
   async function doInstall(f: FormData) {
     'use server'
@@ -81,8 +81,8 @@ export default async function SetupPage({
             <div className="mb-5">
               <Row ok={s.envDb} label="ตั้งค่า TURSO_DATABASE_URL แล้ว"
                 detail={s.envDb ? undefined : 'ไปตั้งใน Netlify → Site settings → Environment variables'} />
-              <Row ok={s.envSecret} label="ตั้งค่า AUTH_SECRET แล้ว (ยาวอย่างน้อย 32 ตัวอักษร)"
-                detail={s.envSecret ? undefined : 'สร้างด้วย node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64url\'))"'} />
+              <Row ok={null} label="กุญแจเซ็นเซสชัน"
+                detail={process.env.AUTH_SECRET ? 'ใช้ค่าที่ตั้งไว้ใน AUTH_SECRET' : 'ระบบจะสุ่มให้อัตโนมัติ ไม่ต้องตั้งเอง'} />
               <Row ok={s.dbReachable} label="เชื่อมต่อฐานข้อมูลได้" detail={s.error} />
               <Row ok={null} label="ตารางในฐานข้อมูล"
                 detail={s.tables === 0 ? 'ยังไม่มี — ระบบจะสร้างให้ตอนกดติดตั้ง' : `พบ ${s.tables} ตาราง`} />

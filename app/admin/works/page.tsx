@@ -1,3 +1,4 @@
+import { requireAdmin } from '@/lib/auth'
 import Link from 'next/link'
 import { all } from '@/lib/db'
 import { getIndicators } from '@/lib/queries'
@@ -11,6 +12,7 @@ interface Row {
 export default async function WorksAdmin({
   searchParams,
 }: { searchParams: Promise<{ ind?: string; deleted?: string }> }) {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const { ind, deleted } = await searchParams
   const indId = Number(ind) || 0
   const [rows, indicators] = await Promise.all([

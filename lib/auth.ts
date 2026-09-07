@@ -1,9 +1,10 @@
 import 'server-only'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { randomBytes } from 'node:crypto'
 import { SignJWT, jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
-import { db, all, one, now } from './db'
+import { db, all, one, scalar, now } from './db'
 
 const COOKIE = 'vpa_session'
 const MAX_AGE = 60 * 60 * 8          // 8 ชั่วโมง
@@ -12,12 +13,40 @@ const LOCK_MINUTES = 15              // ล็อกนานกี่นาท�
 
 export interface Session { uid: number; username: string; name: string }
 
-function secret(): Uint8Array {
-  const s = process.env.AUTH_SECRET
-  if (!s || s.length < 32) {
-    throw new Error('ยังไม่ได้ตั้ง AUTH_SECRET (ต้องยาวอย่างน้อย 32 ตัวอักษร) — ดู .env.local')
+let cachedSecret: Uint8Array | null = null
+
+/**
+ * กุญแจเซ็นเซสชัน
+ *
+ * ลำดับการหา:
+ *   1) ตัวแปร AUTH_SECRET (ถ้าตั้งไว้ — เหมาะกับคนที่อยากคุมเอง)
+ *   2) ค่าที่เก็บไว้ในฐานข้อมูล
+ *   3) ถ้ายังไม่มี สุ่มขึ้นมาใหม่แล้วเก็บลงฐานข้อมูลให้อัตโนมัติ
+ *
+ * ข้อ 3 มีไว้เพื่อให้คนที่ไม่ถนัดเทคนิคไม่ต้องมานั่งสุ่มค่าเองตอนติดตั้ง
+ * เก็บในฐานข้อมูลปลอดภัยพอ ๆ กับข้อมูลอื่นในเว็บ และอยู่ข้ามการ deploy
+ */
+async function secret(): Promise<Uint8Array> {
+  if (cachedSecret) return cachedSecret
+
+  const fromEnv = process.env.AUTH_SECRET
+  if (fromEnv && fromEnv.length >= 32) {
+    cachedSecret = new TextEncoder().encode(fromEnv)
+    return cachedSecret
   }
-  return new TextEncoder().encode(s)
+
+  let value = await scalar<string>(
+    "SELECT value FROM site_settings WHERE key = 'auth_secret'")
+  if (!value || value.length < 32) {
+    value = randomBytes(32).toString('base64url')
+    await db.execute({
+      sql: `INSERT INTO site_settings (key, value, updated_at) VALUES ('auth_secret', ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      args: [value, now()],
+    })
+  }
+  cachedSecret = new TextEncoder().encode(value)
+  return cachedSecret
 }
 
 /* ------------------------------------------------------------------ */
@@ -29,7 +58,7 @@ export async function createSession(user: Session): Promise<void> {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
-    .sign(secret())
+    .sign(await secret())
 
   const jar = await cookies()
   jar.set(COOKIE, token, {
@@ -46,7 +75,7 @@ export async function getSession(): Promise<Session | null> {
   const token = (await cookies()).get(COOKIE)?.value
   if (!token) return null
   try {
-    const { payload } = await jwtVerify(token, secret())
+    const { payload } = await jwtVerify(token, await secret())
     if (typeof payload.uid !== 'number' || typeof payload.username !== 'string') return null
     return { uid: payload.uid, username: payload.username, name: String(payload.name ?? '') }
   } catch {

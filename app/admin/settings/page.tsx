@@ -17,6 +17,7 @@ const THEME_LABEL: Record<string, { name: string; c1: string; c2: string }> = {
 export default async function SettingsAdmin({
   searchParams,
 }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const { saved, error } = await searchParams
   const theme = (await getSetting('theme')) ?? 'royal'
 

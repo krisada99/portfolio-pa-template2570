@@ -1,3 +1,4 @@
+import { requireAdmin } from '@/lib/auth'
 import Link from 'next/link'
 import { all } from '@/lib/db'
 import { thaiDate } from '@/lib/theme'
@@ -13,6 +14,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function PaAdmin({
   searchParams,
 }: { searchParams: Promise<{ deleted?: string }> }) {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const { deleted } = await searchParams
   const rows = await all<Row>(
     `SELECT a.id, a.fiscal_year, a.round, a.status, a.period_start, a.period_end,

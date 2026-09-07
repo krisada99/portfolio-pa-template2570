@@ -39,7 +39,7 @@ export interface SetupStatus {
 export async function getStatus(): Promise<SetupStatus> {
   const s: SetupStatus = {
     envDb: !!process.env.TURSO_DATABASE_URL,
-    envSecret: (process.env.AUTH_SECRET ?? '').length >= 32,
+    envSecret: true,   // ไม่บังคับแล้ว — ถ้าไม่ตั้ง ระบบสุ่มให้เองแล้วเก็บในฐานข้อมูล
     dbReachable: false, tables: 0, seeded: false, hasUser: false, demoRows: 0,
   }
   if (!s.envDb) return s

@@ -1,3 +1,4 @@
+import { requireAdmin } from '@/lib/auth'
 import Link from 'next/link'
 import { getAwards } from '@/lib/queries'
 import { thaiDate } from '@/lib/theme'
@@ -6,6 +7,7 @@ import { imageUrl, IMG } from '@/lib/media'
 export default async function AwardsAdmin({
   searchParams,
 }: { searchParams: Promise<{ deleted?: string }> }) {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const { deleted } = await searchParams
   const rows = await getAwards()
 

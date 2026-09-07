@@ -11,6 +11,7 @@ import SavedFlag from '@/components/admin/SavedFlag'
 export default async function ProfileAdmin({
   searchParams,
 }: { searchParams: Promise<{ saved?: string }> }) {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const { saved } = await searchParams
   const p = await getProfile()
 

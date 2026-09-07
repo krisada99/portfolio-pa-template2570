@@ -1,3 +1,4 @@
+import { requireAdmin } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import { getSelfDev, getItemImages, getItemFiles } from '@/lib/queries'
 import ItemForm from '@/components/admin/ItemForm'
@@ -9,6 +10,7 @@ import { currentAcademicYear } from '@/lib/theme'
 export default async function EditSelfDev({
   params, searchParams,
 }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string; error?: string }> }) {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const { id } = await params
   const { saved, error } = await searchParams
   const rowId = Number(id)

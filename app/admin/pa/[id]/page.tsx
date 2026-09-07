@@ -1,3 +1,4 @@
+import { requireAdmin } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import { one } from '@/lib/db'
 import { getDomains, getIndicators, getPaDetails, getPaChallenge } from '@/lib/queries'
@@ -9,6 +10,7 @@ import { saveAgreement, deleteAgreement } from '../actions'
 export default async function EditAgreement({
   params, searchParams,
 }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string; error?: string }> }) {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const { id } = await params
   const { saved, error } = await searchParams
   const agId = Number(id)

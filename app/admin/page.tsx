@@ -1,7 +1,9 @@
+import { requireAdmin } from '@/lib/auth'
 import Link from 'next/link'
 import { getStats, getWorks, getAgreements, getSelfDevs, getAwards, getProfile } from '@/lib/queries'
 
 export default async function AdminDashboard() {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const [stats, latest, agreements, devs, awards, profile] = await Promise.all([
     getStats(), getWorks({ limit: 5 }), getAgreements(), getSelfDevs(), getAwards(), getProfile(),
   ])

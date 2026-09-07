@@ -1,3 +1,4 @@
+import { requireAdmin } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import { getAward, getItemImages, getItemFiles } from '@/lib/queries'
 import ItemForm from '@/components/admin/ItemForm'
@@ -8,6 +9,7 @@ import { saveAward, deleteAward } from '@/lib/item-actions'
 export default async function EditAward({
   params, searchParams,
 }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string; error?: string }> }) {
+  await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
   const { id } = await params
   const { saved, error } = await searchParams
   const rowId = Number(id)
