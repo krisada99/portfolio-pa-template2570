@@ -11,4 +11,5 @@ db/*.sqlite-shm
 .netlify/
 dist/
 .next/
+*.tsbuildinfo
 .DS_Store
