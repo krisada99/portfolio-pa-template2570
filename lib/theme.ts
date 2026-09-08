@@ -87,3 +87,9 @@ export function initialOf(fullName: string | null | undefined): string {
   const s = (fullName ?? '').replace(/^(นางสาว|นาย|นาง|ดร\.|ว่าที่ ร\.ต\.)\s*/u, '')
   return s.slice(0, 1) || 'ค'
 }
+
+/** พ.ศ. ปีงบประมาณปัจจุบัน (ขึ้นปีใหม่ 1 ตุลาคม) — ตรงกับ current_fiscal_year() ของเว็บ PHP */
+export function currentFiscalYear(d = new Date()): number {
+  const be = d.getFullYear() + 543
+  return d.getMonth() + 1 >= 10 ? be + 1 : be
+}

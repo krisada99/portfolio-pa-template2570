@@ -41,11 +41,15 @@ export const getIndicator = (id: number) =>
   one<Indicator>(`SELECT i.*, d.code AS domain_code, d.name AS domain_name
                   FROM indicators i JOIN domains d ON d.id = i.domain_id WHERE i.id = ?`, [id])
 
-/** จำนวนผลงานของแต่ละตัวชี้วัด — ใช้โชว์ตัวเลขบนการ์ด */
-export async function getWorkCountByIndicator(): Promise<Map<number, number>> {
+/**
+ * จำนวนผลงานของแต่ละตัวชี้วัด — ใช้โชว์ตัวเลขบนการ์ด
+ * includeDraft = true สำหรับหลังบ้าน (ครูต้องเห็นฉบับร่างของตัวเองด้วย)
+ */
+export async function getWorkCountByIndicator(includeDraft = false): Promise<Map<number, number>> {
   const rows = await all<{ indicator_id: number; n: number }>(
     `SELECT indicator_id, COUNT(*) AS n FROM works
-     WHERE deleted_at IS NULL AND status = 'published' GROUP BY indicator_id`)
+     WHERE deleted_at IS NULL ${includeDraft ? '' : "AND status = 'published'"}
+     GROUP BY indicator_id`)
   return new Map(rows.map((r) => [Number(r.indicator_id), Number(r.n)]))
 }
 
@@ -135,6 +139,9 @@ export const getAgreements = cache(() =>
 export const getAgreement = (fiscalYear: number) =>
   one<Agreement>('SELECT * FROM pa_agreements WHERE fiscal_year = ? AND deleted_at IS NULL', [fiscalYear])
 
+export const getAgreementById = (id: number) =>
+  one<Agreement>('SELECT * FROM pa_agreements WHERE id = ? AND deleted_at IS NULL', [id])
+
 export const getPaDetails = (agreementId: number) =>
   all<PaDetail>(`SELECT p.*, i.code AS indicator_code, i.name AS indicator_name, d.code AS domain_code
                  FROM pa_details p
@@ -211,11 +218,12 @@ export interface IndicatorOverview extends Indicator {
  */
 export async function getIndicatorOverviewGrouped(
   agreementId: number,
+  includeDraft = false,
 ): Promise<Map<number, IndicatorOverview[]>> {
   const [indicators, counts, details] = await Promise.all([
     getIndicators(),
-    getWorkCountByIndicator(),
-    getPaDetails(agreementId),
+    getWorkCountByIndicator(includeDraft),
+    agreementId ? getPaDetails(agreementId) : Promise.resolve([]),
   ])
   const paByInd = new Map(details.map((d) => [Number(d.indicator_id), d]))
 

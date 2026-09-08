@@ -4,9 +4,10 @@ import {
   getProfile, getDomains, getIndicators, getAgreements,
   getAdminStats, getWorksAddedThisMonth, getRecentWorksIncludingDraft,
 } from '@/lib/queries'
-import { domainTheme, currentAcademicYear, excerpt } from '@/lib/theme'
+import { domainTheme, currentAcademicYear, currentFiscalYear, excerpt } from '@/lib/theme'
 import PageHead from '@/components/admin/PageHead'
 import CountUp from '@/components/CountUp'
+import { NewYearProvider, NewYearButton } from '@/components/admin/NewYearModal'
 
 /** แดชบอร์ดหลังบ้าน — แปลงมาจาก admin/index.php ของเว็บ PHP */
 
@@ -23,6 +24,9 @@ export default async function AdminDashboard() {
     getDomains(), getIndicators(), getAgreements(),
     getRecentWorksIncludingDraft(6), getWorksAddedThisMonth(),
   ])
+
+  const nextFiscalYear = Number(agreements[0]?.fiscal_year ?? currentFiscalYear() - 1) + 1
+  const yearOpts = agreements.map((a) => ({ id: Number(a.id), fiscal_year: Number(a.fiscal_year) }))
 
   const w = stats.works_by_domain
   const totalW = Math.max(1, [...w.values()].reduce((a, b) => a + b, 0))
@@ -65,7 +69,7 @@ export default async function AdminDashboard() {
   ]
 
   return (
-    <>
+    <NewYearProvider nextYear={nextFiscalYear} years={yearOpts}>
       <PageHead
         title={`สวัสดีค่ะ ${nickname} 🌸`}
         sub={`ปีการศึกษา ${currentAcademicYear()} ภาคเรียนที่ ${semester}`}
@@ -248,7 +252,7 @@ export default async function AdminDashboard() {
 
           <div className="mt-3 flex flex-col gap-2.5">
             {agreements.map((a, i) => (
-              <Link key={a.id} href={`/admin/pa/${a.id}`}
+              <Link key={a.id} href={`/admin/pa?id=${a.id}`}
                 className={`card-pop block rounded-[1.3rem] px-4 py-3 ${i === 0 ? '!border-primary-line' : ''}`}
                 style={i === 0 ? { background: 'var(--grad-soft)' } : undefined}>
                 <div className="flex justify-between items-center gap-2">
@@ -269,10 +273,9 @@ export default async function AdminDashboard() {
             ))}
           </div>
 
-          <Link href="/admin/pa/new"
-            className="block text-center w-full mt-3 min-h-[46px] border-2 border-dashed border-primary-line rounded-[1.3rem] py-2.5 text-[12.5px] font-bold text-primary-deep bg-white hover:bg-primary-soft hover:border-primary transition">
+          <NewYearButton className="w-full mt-3 min-h-[46px] border-2 border-dashed border-primary-line rounded-[1.3rem] py-2.5 text-[12.5px] font-bold text-primary-deep bg-white hover:bg-primary-soft hover:border-primary transition">
             + สร้างปีงบประมาณใหม่
-          </Link>
+          </NewYearButton>
         </section>
       </div>
 
@@ -329,6 +332,6 @@ export default async function AdminDashboard() {
           </div>
         )}
       </section>
-    </>
+    </NewYearProvider>
   )
 }
