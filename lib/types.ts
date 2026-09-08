@@ -94,5 +94,5 @@ export interface ItemFile {
   mime_type: string; size_bytes: number
 }
 
-export interface Education { id: number; year_th: number; degree: string; institute: string }
-export interface CareerPath { id: number; period: string; position: string; school: string; is_current: number }
+export interface Education { id: number; year_th: number; degree: string; institute: string; sort_order: number }
+export interface CareerPath { id: number; period: string; position: string; school: string; is_current: number; sort_order: number }

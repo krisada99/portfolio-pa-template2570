@@ -214,7 +214,7 @@ INSERT INTO awards (id, title, awarder, level, award_date, image_source, image_r
 INSERT INTO awards (id, title, awarder, level, award_date, image_source, image_ref, note, summary, content, video_url, link_url, link_label, deleted_at) VALUES (4, 'เกียรติบัตรครูผู้ฝึกสอนนักเรียนได้รับรางวัลเหรียญทอง การแข่งขันหุ่นยนต์', 'งานศิลปหัตถกรรมนักเรียนระดับภาคเหนือ', 'ภาค', '2025-12-19', 'static', 'media/awards/award4.jpg', 'นักเรียน 3 คน', '', NULL, '', '', '', NULL);
 
 -- site_settings (1 แถว)
-INSERT INTO site_settings (key, value) VALUES ('theme', 'pink') ON CONFLICT(key) DO UPDATE SET value=excluded.value;
+INSERT INTO site_settings (key, value) VALUES ('theme', 'emerald') ON CONFLICT(key) DO UPDATE SET value=excluded.value;
 
 COMMIT;
 PRAGMA foreign_keys = ON;
