@@ -29,11 +29,20 @@ export function currentAcademicYear(d = new Date()): number {
   return d.getMonth() + 1 >= 5 ? be : be - 1
 }
 
-/** วันที่แบบไทย: 5 มิ.ย. 2569 */
-const TH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
-export function thaiDate(value: string | null | undefined): string {
-  if (!value) return ''
+/**
+ * วันที่แบบไทย — ตรงกับ thai_date($date, $short) ของเว็บ PHP
+ *   short = true  → 5 มิ.ย. 2569
+ *   short = false → 5 มิถุนายน 2569
+ * ไม่มีวันที่คืน '—' เหมือนกัน
+ */
+const TH_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+const TH_FULL = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                 'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม']
+
+export function thaiDate(value: string | null | undefined, short = true): string {
+  if (!value || value === '0000-00-00') return '—'
   const d = new Date(String(value).slice(0, 10) + 'T00:00:00')
-  if (Number.isNaN(d.getTime())) return ''
-  return `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`
+  if (Number.isNaN(d.getTime())) return '—'
+  const m = (short ? TH_SHORT : TH_FULL)[d.getMonth()]
+  return `${d.getDate()} ${m} ${d.getFullYear() + 543}`
 }

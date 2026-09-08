@@ -281,3 +281,41 @@ export const getHomeStats = cache(async (): Promise<HomeStats> => {
     awards: Number(totals?.awards ?? 0),
   }
 })
+
+
+/* ---------------- ข้อมูลประกอบหน้าการพัฒนาตนเอง ---------------- */
+
+/** จำนวนรายการและชั่วโมงแยกรายปีงบประมาณ — ใช้แสดงใน dropdown เลือกปี */
+export const getSelfDevYearStats = cache(async (): Promise<Map<number, { n: number; h: number }>> => {
+  const rows = await all<{ fiscal_year: number; n: number; h: number }>(
+    `SELECT fiscal_year, COUNT(*) AS n, COALESCE(SUM(hours),0) AS h
+     FROM self_developments WHERE deleted_at IS NULL GROUP BY fiscal_year`)
+  return new Map(rows.map((r) => [Number(r.fiscal_year), { n: Number(r.n), h: Number(r.h) }]))
+})
+
+/** ชั่วโมงพัฒนาตนเอง — ระบุปีเพื่อดูเฉพาะปีนั้น ไม่ระบุคือรวมทุกปี */
+export const getSelfDevHours = cache(async (fiscalYear?: number): Promise<number> => {
+  const n = await scalar<number>(
+    `SELECT COALESCE(SUM(hours),0) FROM self_developments
+     WHERE deleted_at IS NULL ${fiscalYear ? 'AND fiscal_year = ?' : ''}`,
+    fiscalYear ? [fiscalYear] : [])
+  return Number(n ?? 0)
+})
+
+export interface AttachCount { images: number; files: number }
+
+/** จำนวนรูปและไฟล์แนบของแต่ละรายการ — ใช้แสดงชิป "🖼️ n · 📎 n" */
+export const getItemAttachmentCounts = cache(
+  async (type: 'award' | 'self_dev'): Promise<Map<number, AttachCount>> => {
+    const [imgs, files] = await Promise.all([
+      all<{ entity_id: number; n: number }>(
+        'SELECT entity_id, COUNT(*) AS n FROM item_images WHERE entity_type = ? GROUP BY entity_id', [type]),
+      all<{ entity_id: number; n: number }>(
+        'SELECT entity_id, COUNT(*) AS n FROM item_files WHERE entity_type = ? GROUP BY entity_id', [type]),
+    ])
+    const out = new Map<number, AttachCount>()
+    const get = (id: number) => out.get(id) ?? { images: 0, files: 0 }
+    for (const r of imgs) out.set(Number(r.entity_id), { ...get(Number(r.entity_id)), images: Number(r.n) })
+    for (const r of files) out.set(Number(r.entity_id), { ...get(Number(r.entity_id)), files: Number(r.n) })
+    return out
+  })
