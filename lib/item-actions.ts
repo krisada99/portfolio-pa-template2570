@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAdmin, logAction } from '@/lib/auth'
-import { db, now } from '@/lib/db'
+import { db, now, one, all } from '@/lib/db'
 import { str, int, date, pick, media } from '@/lib/form'
 import type { MediaSource } from '@/lib/media'
 
@@ -52,20 +52,83 @@ async function writeItemMedia(entity: Entity, id: number, f: FormData, t: string
 
 const DEV_TYPES = ['อบรม', 'สัมมนา', 'ศึกษาดูงาน', 'PLC', 'วิทยากร'] as const
 
-export async function saveSelfDev(id: number, f: FormData): Promise<void> {
+export type Result = { ok: true; id: number } | { ok: false; error: string }
+
+export interface SelfDevEdit {
+  id: number; title: string; organizer: string; type: string
+  start_date: string; end_date: string; hours: number; fiscal_year: number
+  certificate_source: MediaSource | null; certificate_ref: string | null
+  note: string; summary: string; content: string
+  video_url: string; link_url: string; link_label: string
+  images: { id?: number; source: MediaSource; ref: string; caption: string }[]
+  files: { id?: number; source: MediaSource; ref: string; original_name: string }[]
+}
+
+/** อ่านรูปและไฟล์แนบของรายการหนึ่ง (ใช้ร่วมกันทั้งรางวัลและการพัฒนาตนเอง) */
+async function readItemMedia(entity: Entity, id: number) {
+  const [images, files] = await Promise.all([
+    all<{ id: number; source: MediaSource; ref: string; caption: string }>(
+      `SELECT id, source, ref, caption FROM item_images
+       WHERE entity_type = ? AND entity_id = ? ORDER BY sort_order, id`, [entity, id]),
+    all<{ id: number; source: MediaSource; ref: string; original_name: string }>(
+      `SELECT id, source, ref, original_name FROM item_files
+       WHERE entity_type = ? AND entity_id = ? ORDER BY sort_order, id`, [entity, id]),
+  ])
+  return { images, files }
+}
+
+export async function getSelfDevForEdit(id: number): Promise<SelfDevEdit | null> {
   await requireAdmin()
+  const r = await one<Record<string, unknown>>(
+    'SELECT * FROM self_developments WHERE id = ? AND deleted_at IS NULL', [id])
+  if (!r) return null
+  const { images, files } = await readItemMedia('self_dev', id)
+  return {
+    id: Number(r.id),
+    title: String(r.title ?? ''),
+    organizer: String(r.organizer ?? ''),
+    type: String(r.type ?? 'อบรม'),
+    start_date: String(r.start_date ?? ''),
+    end_date: String(r.end_date ?? ''),
+    hours: Number(r.hours ?? 0),
+    fiscal_year: Number(r.fiscal_year ?? 0),
+    certificate_source: (r.certificate_source as MediaSource) ?? null,
+    certificate_ref: (r.certificate_ref as string) ?? null,
+    note: String(r.note ?? ''),
+    summary: String(r.summary ?? ''),
+    content: String(r.content ?? ''),
+    video_url: String(r.video_url ?? ''),
+    link_url: String(r.link_url ?? ''),
+    link_label: String(r.link_label ?? ''),
+    images, files,
+  }
+}
+
+export async function saveSelfDev(f: FormData): Promise<Result> {
+  await requireAdmin()
+
+  const id = int(f, 'id')
   const title = str(f, 'title', 255)
-  if (!title) redirect(id ? `/admin/self-dev/${id}?error=title` : '/admin/self-dev/new?error=title')
+  if (!title) return { ok: false, error: 'กรุณากรอกชื่อหลักสูตร / กิจกรรม' }
+  if (!date(f, 'start_date')) return { ok: false, error: 'กรุณาเลือกวันที่เริ่ม' }
+
+  const fy = int(f, 'fiscal_year')
+  if (fy < 2500 || fy > 2700) return { ok: false, error: 'ปีงบประมาณต้องอยู่ระหว่าง 2500–2700' }
+
+  const hours = int(f, 'hours')
+  if (hours < 0 || hours > 2000) return { ok: false, error: 'จำนวนชั่วโมงต้องอยู่ระหว่าง 0–2000' }
+
+  if (id && !await one('SELECT id FROM self_developments WHERE id = ? AND deleted_at IS NULL', [id]))
+    return { ok: false, error: 'ไม่พบรายการที่ต้องการแก้ไข' }
 
   const cert = media(f, 'cert')
   const t = now()
   const args = [
     title, str(f, 'organizer', 200), pick(f, 'type', DEV_TYPES, 'อบรม'),
-    date(f, 'start_date'), date(f, 'end_date'), int(f, 'hours'),
-    int(f, 'fiscal_year', new Date().getFullYear() + 544),
-    cert.source, cert.ref, str(f, 'note', 400), str(f, 'summary', 400),
-    str(f, 'content', 20000), str(f, 'video_url', 500),
-    str(f, 'link_url', 500), str(f, 'link_label', 120), t,
+    date(f, 'start_date'), date(f, 'end_date'), hours, fy,
+    cert.source, cert.ref, str(f, 'note', 400), str(f, 'summary', 500),
+    str(f, 'content', 20000), str(f, 'video_url', 255),
+    str(f, 'link_url', 255), str(f, 'link_label', 120), t,
   ]
 
   let rowId = id
@@ -90,15 +153,15 @@ export async function saveSelfDev(id: number, f: FormData): Promise<void> {
   await writeItemMedia('self_dev', rowId, f, t)
   await logAction(id ? 'แก้ไขการพัฒนาตนเอง' : 'เพิ่มการพัฒนาตนเอง', 'self_developments', rowId, title)
   revalidatePath('/', 'layout')
-  redirect(`/admin/self-dev/${rowId}?saved=1`)
+  return { ok: true, id: rowId }
 }
 
-export async function deleteSelfDev(id: number): Promise<void> {
+export async function deleteSelfDev(id: number): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin()
   await db.execute({ sql: 'UPDATE self_developments SET deleted_at = ? WHERE id = ?', args: [now(), id] })
   await logAction('ลบการพัฒนาตนเอง', 'self_developments', id)
   revalidatePath('/', 'layout')
-  redirect('/admin/self-dev?deleted=1')
+  return { ok: true }
 }
 
 /* ---------------- รางวัล ---------------- */

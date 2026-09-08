@@ -1,62 +1,108 @@
 import { requireAdmin } from '@/lib/auth'
-import Link from 'next/link'
-import { getSelfDevs } from '@/lib/queries'
-import { thaiDate } from '@/lib/theme'
+import { getSelfDevs, getSelfDevYearStats, getItemAttachmentCounts } from '@/lib/queries'
+import { thaiDate, currentFiscalYear } from '@/lib/theme'
+import { fileUrl } from '@/lib/media'
+import PageHead from '@/components/admin/PageHead'
+import CountUp from '@/components/CountUp'
+import YearSelect from '@/components/YearSelect'
+import { SelfDevProvider, NewSelfDevButton } from '@/components/admin/SelfDevModal'
+import SelfDevTable, { type SelfDevRow } from '@/components/admin/SelfDevTable'
 
+/** จัดการการพัฒนาตนเองและวิชาชีพ (ด้านที่ 3) — แปลงจาก admin/self-dev.php */
 export default async function SelfDevAdmin({
   searchParams,
-}: { searchParams: Promise<{ deleted?: string }> }) {
+}: { searchParams: Promise<{ fy?: string }> }) {
   await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
-  const { deleted } = await searchParams
-  const rows = await getSelfDevs()
-  const hours = rows.reduce((s, r) => s + Number(r.hours || 0), 0)
+  const sp = await searchParams
+
+  const stats = await getSelfDevYearStats()
+  const fyList = [...stats.keys()].sort((a, b) => b - a)
+  if (fyList.length === 0) fyList.push(currentFiscalYear())
+
+  const fy = Number(sp.fy) || fyList[0]!
+  const [items, counts] = await Promise.all([
+    getSelfDevs(fy), getItemAttachmentCounts('self_dev'),
+  ])
+  const hours = items.reduce((s, r) => s + Number(r.hours || 0), 0)
+
+  // ปีปัจจุบันต้องเลือกได้เสมอ แม้ยังไม่มีรายการสักอัน
+  const yearOptions = fyList.includes(currentFiscalYear()) ? fyList : [currentFiscalYear(), ...fyList]
+
+  const rows: SelfDevRow[] = items.map((s) => {
+    const n = counts.get(Number(s.id)) ?? { images: 0, files: 0 }
+    return {
+      id: Number(s.id),
+      type: s.type,
+      title: s.title,
+      summary: s.summary ?? '',
+      note: s.note ?? '',
+      organizer: s.organizer ?? '',
+      hasContent: !!s.content,
+      hasVideo: !!s.video_url,
+      dateText: thaiDate(s.start_date)
+        + (s.end_date && s.end_date !== s.start_date ? ` – ${thaiDate(s.end_date)}` : ''),
+      hours: Number(s.hours || 0),
+      certUrl: fileUrl({ source: s.certificate_source, ref: s.certificate_ref }),
+      images: n.images,
+      files: n.files,
+    }
+  })
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-[22px] font-extrabold">การพัฒนาตนเอง</h1>
-          <p className="text-[13px] text-ink-muted">{rows.length} รายการ · รวม {hours} ชั่วโมง</p>
+    <SelfDevProvider fiscalYear={fy}>
+      <PageHead
+        title="การพัฒนาตนเอง 🌱"
+        sub="อบรม · สัมมนา · ศึกษาดูงาน · PLC · วิทยากร (แยกตามปีงบประมาณ)"
+        actions={<NewSelfDevButton className="btn btn-primary text-[12.5px]">+ เพิ่มรายการ</NewSelfDevButton>}
+      />
+
+      {/* สถิติหัวหน้า */}
+      <div className="mt-5 grid sm:grid-cols-3 gap-3.5">
+        {/* ชั่วโมงรวม */}
+        <div className="relative overflow-hidden bg-white rounded-[1.6rem] p-5 shadow-soft border border-[color:var(--border)] flex items-center gap-4">
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-mint-soft opacity-70 pointer-events-none" aria-hidden="true" />
+          <div className="relative w-11 h-11 rounded-2xl grid place-items-center text-xl bg-mint-soft shrink-0">⏱️</div>
+          <div className="relative min-w-0">
+            <span className="block text-[12px] text-ink-muted font-medium">ชั่วโมงรวม ปีงบประมาณ {fy}</span>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="stat-num bg-gradient-to-br from-mint to-sky bg-clip-text text-transparent"><CountUp to={hours} /></span>
+              <span className="text-[12.5px] text-ink-muted font-semibold">ชั่วโมง</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {deleted === '1' && <span className="chip !text-[12px]" style={{ background: '#E8F6EE', color: '#2E7D4F', borderColor: '#B6E3C8' }}>✓ ลบแล้ว</span>}
-          <Link href="/admin/self-dev/new" className="btn btn-primary">+ เพิ่มรายการ</Link>
+
+        {/* จำนวนรายการ */}
+        <div className="relative overflow-hidden bg-white rounded-[1.6rem] p-5 shadow-soft border border-[color:var(--border)] flex items-center gap-4">
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-sky-soft opacity-70 pointer-events-none" aria-hidden="true" />
+          <div className="relative w-11 h-11 rounded-2xl grid place-items-center text-xl bg-sky-soft shrink-0">📚</div>
+          <div className="relative min-w-0">
+            <span className="block text-[12px] text-ink-muted font-medium">จำนวนรายการ</span>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="stat-num bg-gradient-to-br from-sky to-[#1D4ED8] bg-clip-text text-transparent"><CountUp to={items.length} /></span>
+              <span className="text-[12.5px] text-ink-muted font-semibold">รายการ</span>
+            </div>
+          </div>
+        </div>
+
+        {/* เลือกปีงบประมาณ */}
+        <div className="bg-white rounded-[1.6rem] p-5 shadow-soft border border-[color:var(--border)] flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl grid place-items-center text-xl bg-sunny-soft shrink-0">📅</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] text-ink-muted font-medium">เลือกปีงบประมาณ</p>
+            <div className="mt-1.5">
+              <YearSelect label="" tone="light" head="เลือกปีงบประมาณ"
+                items={yearOptions.map((y) => ({
+                  year: y,
+                  meta: `${stats.get(y)?.h ?? 0} ชม.`,
+                  url: `/admin/self-dev?fy=${y}`,
+                  active: y === fy,
+                }))} />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="card-soft overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px] min-w-[700px]">
-            <thead>
-              <tr className="bg-[color:var(--divider)] text-left">
-                <th className="px-3 py-2.5 w-12 font-bold">#</th>
-                <th className="px-3 py-2.5 font-bold">รายการ</th>
-                <th className="px-3 py-2.5 w-28 font-bold">ประเภท</th>
-                <th className="px-3 py-2.5 w-32 font-bold">วันที่</th>
-                <th className="px-3 py-2.5 w-24 font-bold">ปีงบฯ</th>
-                <th className="px-3 py-2.5 w-20 font-bold text-right">ชั่วโมง</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr><td colSpan={6} className="px-3 py-10 text-center text-ink-muted">ยังไม่มีรายการ</td></tr>
-              ) : rows.map((r, i) => (
-                <tr key={r.id} className="border-t border-[color:var(--divider)] hover:bg-[color:var(--divider)]/40">
-                  <td className="px-3 py-2.5 text-ink-faint">{i + 1}</td>
-                  <td className="px-3 py-2.5">
-                    <Link href={`/admin/self-dev/${r.id}`} className="font-semibold hover:text-primary-deep hover:underline">{r.title}</Link>
-                    <span className="block text-[11.5px] text-ink-faint">{r.organizer}</span>
-                  </td>
-                  <td className="px-3 py-2.5"><span className="chip !text-[11px]">{r.type}</span></td>
-                  <td className="px-3 py-2.5 text-ink-muted">{thaiDate(r.start_date) || '—'}</td>
-                  <td className="px-3 py-2.5">{r.fiscal_year}</td>
-                  <td className="px-3 py-2.5 text-right font-bold">{r.hours}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+      <SelfDevTable rows={rows} fiscalYear={fy} />
+    </SelfDevProvider>
   )
 }
