@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import AdminOnly from '@/components/AdminOnly'
 import { notFound } from 'next/navigation'
 import {
   getWorkBySlug, getWorkImages, getWorkFiles, getWorks,
@@ -283,6 +284,12 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
                 </Link>
               </nav>
             )}
+
+            <AdminOnly>
+              <Link href={`/admin/indicator/${work.indicator_id}?edit=${work.id}`} className="btn btn-ink w-full">
+                ✏️ แก้ไขผลงานนี้
+              </Link>
+            </AdminOnly>
           </aside>
         </div>
       </section>

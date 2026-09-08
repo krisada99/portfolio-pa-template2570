@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import AdminOnly from '@/components/AdminOnly'
 import { useEffect, useRef, useState } from 'react'
 
 /**
@@ -138,6 +139,13 @@ export default function IndicatorWorks({
         <div className="card-soft rounded-[2rem] text-center py-14 mt-2 text-ink-muted">
           <div className="text-5xl mb-3">🌸</div>
           {q || year ? 'ไม่พบผลงานตามเงื่อนไขที่เลือก' : 'ยังไม่มีผลงานในตัวชี้วัดนี้'}
+          {!q && !year && (
+            <AdminOnly>
+              <div className="mt-4">
+                <Link href={`/admin/indicator/${indicatorId}?new=1`} className="btn btn-primary">+ เพิ่มผลงานชิ้นแรก</Link>
+              </div>
+            </AdminOnly>
+          )}
         </div>
       )}
 

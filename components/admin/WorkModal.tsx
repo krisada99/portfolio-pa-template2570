@@ -232,11 +232,14 @@ export function WorkModalProvider({
                   </span>
                 </label>
 
-                <ImageSection rows={d.images} onChange={(rows) => set('images', rows)} coverBadge
-                  label="รูปภาพประกอบ (วางลิงก์แชร์จาก Google Drive · เพิ่มได้หลายรูป)"
-                  hint="เพิ่มได้ทีละรูป · รูปแรกจะกลายเป็นภาพปก" />
-                <FileSection rows={d.files} onChange={(rows) => set('files', rows)}
-                  label="ไฟล์แนบ (วางลิงก์แชร์จาก Google Drive · pdf, docx, xlsx, pptx, zip)" />
+                {/* เส้นประคั่นก่อนบล็อกรูป/ไฟล์ เหมือน #existingBox ของ admin/indicator.php */}
+                <div className="mt-6 pt-5 border-t-2 border-dashed border-primary-line/60">
+                  <ImageSection rows={d.images} onChange={(rows) => set('images', rows)} coverBadge
+                    label="รูปภาพประกอบ (วางลิงก์แชร์จาก Google Drive · เพิ่มได้หลายรูป)"
+                    hint="เพิ่มได้ทีละรูป · รูปแรกจะกลายเป็นภาพปก" />
+                  <FileSection rows={d.files} onChange={(rows) => set('files', rows)}
+                    label="ไฟล์แนบ (วางลิงก์แชร์จาก Google Drive · pdf, docx, xlsx, pptx, zip)" />
+                </div>
               </>
             )}
           </div>

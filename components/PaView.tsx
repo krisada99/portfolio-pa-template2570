@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import AdminOnly from '@/components/AdminOnly'
 import { notFound } from 'next/navigation'
 import {
   getProfile, getAgreements, getAgreement, getPaChallenges,
@@ -314,6 +315,9 @@ export default async function PaView({ year }: { year?: number }) {
                   <span className="w-14 h-14 mx-auto rounded-2xl bg-primary-soft grid place-items-center text-[28px]">📄</span>
                   <h3 className="mt-4 text-[17px] font-extrabold">เอกสารแบบบันทึกข้อตกลง</h3>
                   <p className="mt-1.5 text-[13px] text-ink-muted">ยังไม่ได้แนบไฟล์ PDF ของปีงบประมาณนี้</p>
+                  <AdminOnly>
+                    <Link href={`/admin/pa?id=${cur.id}`} className="btn btn-primary w-full mt-4 text-[13px]">📎 แนบไฟล์ PDF</Link>
+                  </AdminOnly>
                 </div>
               )}
 

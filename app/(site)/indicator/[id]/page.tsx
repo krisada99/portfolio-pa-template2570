@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import AdminOnly from '@/components/AdminOnly'
 import { notFound } from 'next/navigation'
 import {
   getIndicator, getIndicators, getIndicatorNeighbors,
@@ -132,6 +133,9 @@ export default async function IndicatorPage({ params }: { params: Promise<{ id: 
 
         <div className="pt-8 pb-6 flex flex-wrap justify-center gap-3">
           <Link href={`/pa#d${dc}`} className="btn btn-ghost text-[13px]">← กลับไปยังตัวชี้วัดทั้ง 15 ตัว</Link>
+          <AdminOnly>
+            <Link href={`/admin/indicator/${id}`} className="btn btn-primary text-[13px]">⚙️ จัดการผลงานของตัวชี้วัดนี้</Link>
+          </AdminOnly>
         </div>
       </div>
     </main>

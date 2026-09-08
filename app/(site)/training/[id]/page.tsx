@@ -54,6 +54,7 @@ export default async function TrainingPage({ params }: { params: Promise<{ id: s
 
   return (
     <ItemDetail
+      tone="sky"
       watermark="3"
       breadcrumb={[{ href: '/', label: '🏠 หน้าแรก' }, { href: '/development', label: '🌱 การพัฒนาตนเอง' }]}
       eyebrow="การพัฒนาตนเองและวิชาชีพ"
@@ -109,6 +110,10 @@ export default async function TrainingPage({ params }: { params: Promise<{ id: s
         href: `/training/${neighbors.next.id}`, label: 'รายการถัดไป', title: neighbors.next.title,
         meta: `📅 ${thaiDate(neighbors.next.start_date)} · ${neighbors.next.type}`,
       } : null}
+      asideBackHref={`/development/${dev.fiscal_year}`}
+      asideBackLabel={`🌱 ดูรายการปีงบประมาณ ${dev.fiscal_year} (${fyTotal} รายการ)`}
+      editHref={`/admin/self-dev?fy=${dev.fiscal_year}`}
+      editLabel="✏️ แก้ไขรายการนี้"
       footerHref={`/development/${dev.fiscal_year}`}
       footerLabel={`ดูรายการพัฒนาตนเองปี ${dev.fiscal_year} ทั้งหมด (${fyTotal} รายการ)`}
     />

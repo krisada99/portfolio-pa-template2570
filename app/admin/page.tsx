@@ -9,6 +9,7 @@ import PageHead from '@/components/admin/PageHead'
 import CountUp from '@/components/CountUp'
 import { NewYearProvider, NewYearButton } from '@/components/admin/NewYearModal'
 import { PickIndicatorProvider, PickIndicatorButton } from '@/components/admin/PickIndicatorModal'
+import RecentWorksTable from '@/components/admin/RecentWorksTable'
 
 /** แดชบอร์ดหลังบ้าน — แปลงมาจาก admin/index.php ของเว็บ PHP */
 
@@ -289,55 +290,33 @@ export default async function AdminDashboard() {
 
       {/* ================= ผลงานล่าสุด ================= */}
       <section className="mt-4 bg-white rounded-[1.6rem] p-6 shadow-soft border border-[color:var(--border)]">
-        <div className="flex justify-between items-center gap-3 flex-wrap">
-          <div>
-            <h2 className="font-bold text-[16px]">🗂️ ผลงานล่าสุด</h2>
-            <p className="text-[12px] text-ink-muted mt-0.5">6 รายการล่าสุด รวมฉบับร่าง</p>
-          </div>
-        </div>
-
         {recent.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="text-5xl float">📚</div>
-            <p className="mt-3 text-[13px] text-ink-muted">ยังไม่มีผลงานในแฟ้ม — เริ่มเพิ่มผลงานชิ้นแรกกันเลย</p>
-            <PickIndicatorButton className="btn btn-primary btn-sm mt-4">+ เพิ่มผลงานใหม่</PickIndicatorButton>
-          </div>
+          <>
+            <div className="flex justify-between items-center gap-3 flex-wrap">
+              <div>
+                <h2 className="font-bold text-[16px]">🗂️ ผลงานล่าสุด</h2>
+                <p className="text-[12px] text-ink-muted mt-0.5">6 รายการล่าสุด รวมฉบับร่าง</p>
+              </div>
+            </div>
+            <div className="text-center py-10">
+              <div className="text-5xl float">📚</div>
+              <p className="mt-3 text-[13px] text-ink-muted">ยังไม่มีผลงานในแฟ้ม — เริ่มเพิ่มผลงานชิ้นแรกกันเลย</p>
+              <PickIndicatorButton className="btn btn-primary btn-sm mt-4">+ เพิ่มผลงานใหม่</PickIndicatorButton>
+            </div>
+          </>
         ) : (
-          <div className="overflow-x-auto mt-4">
-            <table className="adm-table min-w-[720px] md:min-w-0">
-              <thead>
-                <tr><th className="col-no">#</th><th>ชื่อผลงาน</th><th>ตัวชี้วัด</th><th>ปีการศึกษา</th><th>สถานะ</th><th>เข้าชม</th><th>จัดการ</th></tr>
-              </thead>
-              <tbody>
-                {recent.map((r, n) => {
-                  const t = domainTheme(r.domain_code)
-                  return (
-                    <tr key={r.id}>
-                      <td className="col-no" data-label="ลำดับ">{n + 1}</td>
-                      <td data-label="ชื่อผลงาน"><b className="text-ink">{excerpt(r.title, 46)}</b></td>
-                      <td data-label="ตัวชี้วัด">
-                        <Link href={`/admin/indicator/${r.indicator_id}`}
-                          className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-bold hover:-translate-y-0.5 transition"
-                          style={{ background: t.soft, color: t.deep }}>
-                          {r.indicator_code} {(r.indicator_name ?? '').slice(0, 18)}
-                        </Link>
-                      </td>
-                      <td data-label="ปีการศึกษา">{r.semester}/{r.academic_year}</td>
-                      <td data-label="สถานะ">
-                        <span className={`chip ${r.status === 'published' ? 'chip-2' : 'chip-accent'}`}>
-                          {r.status === 'published' ? 'เผยแพร่' : 'ฉบับร่าง'}
-                        </span>
-                      </td>
-                      <td data-label="เข้าชม">{r.view_count || '—'}</td>
-                      <td data-label="จัดการ">
-                        <Link href={`/admin/indicator/${r.indicator_id}?edit=${r.id}`} className="icon-btn edit" title="แก้ไข">✏️</Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          <RecentWorksTable rows={recent.map((r) => {
+            const t = domainTheme(r.domain_code)
+            return {
+              id: Number(r.id), title: excerpt(r.title, 46),
+              indicator_id: Number(r.indicator_id),
+              indicator_code: r.indicator_code ?? '',
+              indicator_name: (r.indicator_name ?? '').slice(0, 18),
+              semester: Number(r.semester), academic_year: Number(r.academic_year),
+              status: r.status, view_count: Number(r.view_count ?? 0),
+              chipBg: t.soft, chipText: t.deep,
+            }
+          })} />
         )}
       </section>
     </NewYearProvider>

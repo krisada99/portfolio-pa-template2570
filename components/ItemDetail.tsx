@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import AdminOnly from '@/components/AdminOnly'
 import WorkGallery, { type GalleryImage } from '@/components/WorkGallery'
 import ShareBar from '@/components/ShareBar'
 import { fileUrl } from '@/lib/media'
@@ -12,7 +13,26 @@ import type { ItemFile } from '@/lib/types'
 
 export interface NeighborLink { href: string; label: string; title: string; meta: string }
 
+/**
+ * โทนสีของหน้า — รางวัลใช้สีธีม ส่วนการพัฒนาตนเองใช้ชมพู/ด้าน 3 ตายตัว
+ * (ตรงกับ award.php ที่ใช้ grad-hero และ training.php ที่ใช้ grad-pink)
+ */
+const TONE = {
+  primary: {
+    hero: 'grad-hero', dots: 'opacity-20', blob1: '!opacity-40', blob2: '!opacity-25',
+    noteBg: 'bg-primary-soft/40', noteText: 'text-primary-deep',
+    navBg: 'bg-primary-soft', navText: 'text-primary-deep', navHover: 'group-hover:bg-[image:var(--grad)]',
+  },
+  sky: {
+    hero: 'grad-pink', dots: 'opacity-[.14]', blob1: '!opacity-25', blob2: '!opacity-20',
+    noteBg: 'bg-sky-soft/50', noteText: 'text-sky-deep',
+    navBg: 'bg-sky-soft', navText: 'text-sky-deep', navHover: 'group-hover:bg-sky',
+  },
+} as const
+
 export interface ItemDetailProps {
+  /* โทนสี */
+  tone?: keyof typeof TONE
   /* HERO */
   watermark: string
   breadcrumb: { href: string; label: string }[]
@@ -35,6 +55,11 @@ export interface ItemDetailProps {
   infoHeading: string
   info: [string, React.ReactNode][]
   extraAside?: React.ReactNode
+  /** ปุ่มกลับท้ายแถบข้าง + ปุ่มลัดไปแก้ไขในหลังบ้าน (โชว์เฉพาะตอนครูล็อกอิน) */
+  asideBackHref: string
+  asideBackLabel: string
+  editHref: string
+  editLabel: string
   /* อื่น ๆ */
   images: GalleryImage[]
   files: ItemFile[]
@@ -46,14 +71,15 @@ export interface ItemDetailProps {
 
 export default function ItemDetail(p: ItemDetailProps) {
   const ytId = youtubeId(p.videoUrl)
+  const t = TONE[p.tone ?? 'primary']
 
   return (
     <main>
       {/* ================= HERO ================= */}
-      <section className="relative overflow-hidden grad-hero text-white">
-        <div className="absolute inset-0 dots opacity-20" />
-        <div className="blob w-[360px] h-[360px] !opacity-40 bg-white -right-24 -top-16" />
-        <div className="blob w-[240px] h-[240px] !opacity-25 bg-white -left-20 -bottom-28 hidden md:block" />
+      <section className={`relative overflow-hidden ${t.hero} text-white`}>
+        <div className={`absolute inset-0 dots ${t.dots}`} />
+        <div className={`blob w-[360px] h-[360px] ${t.blob1} bg-white -right-24 -top-16`} />
+        <div className={`blob w-[240px] h-[240px] ${t.blob2} bg-white -left-20 -bottom-28 hidden md:block`} />
         <span className="absolute -right-2 -bottom-10 text-[200px] md:text-[280px] font-extrabold leading-none text-white/10 select-none pointer-events-none" aria-hidden="true">{p.watermark}</span>
 
         <div className="relative max-w-[1240px] mx-auto px-4 md:px-10 pt-8 md:pt-12 pb-10 md:pb-14">
@@ -109,8 +135,8 @@ export default function ItemDetail(p: ItemDetailProps) {
               </div>
 
               {p.note && (
-                <div className="mt-7 rounded-[1.4rem] border-2 border-dashed border-[color:var(--border)] bg-primary-soft/40 p-5">
-                  <p className="text-[11.5px] font-extrabold tracking-[.1em] uppercase text-primary-deep mb-1.5">📝 หมายเหตุ</p>
+                <div className={`mt-7 rounded-[1.4rem] border-2 border-dashed border-[color:var(--border)] ${t.noteBg} p-5`}>
+                  <p className={`text-[11.5px] font-extrabold tracking-[.1em] uppercase ${t.noteText} mb-1.5`}>📝 หมายเหตุ</p>
                   <p className="text-[13px] leading-relaxed text-ink-soft whitespace-pre-line">{p.note}</p>
                 </div>
               )}
@@ -184,6 +210,12 @@ export default function ItemDetail(p: ItemDetailProps) {
                 </div>
               </div>
             )}
+
+            <Link href={p.asideBackHref} className="btn btn-ghost w-full">{p.asideBackLabel}</Link>
+
+            <AdminOnly>
+              <Link href={p.editHref} className="btn btn-ink w-full">{p.editLabel}</Link>
+            </AdminOnly>
           </aside>
         </div>
 
@@ -192,10 +224,10 @@ export default function ItemDetail(p: ItemDetailProps) {
           <nav className="mt-10 grid sm:grid-cols-2 gap-4" aria-label="รายการอื่น">
             {p.prev ? (
               <Link href={p.prev.href} className="card-pop group flex items-center gap-3.5 !rounded-[1.5rem] px-4 py-4 min-h-[44px]">
-                <span className="w-11 h-11 shrink-0 rounded-full bg-primary-soft text-primary-deep grid place-items-center text-lg
-                                 font-extrabold transition group-hover:bg-[image:var(--grad)] group-hover:text-white group-hover:-translate-x-0.5" aria-hidden="true">←</span>
+                <span className={`w-11 h-11 shrink-0 rounded-full ${t.navBg} ${t.navText} grid place-items-center text-lg
+                                 font-extrabold transition ${t.navHover} group-hover:text-white group-hover:-translate-x-0.5`} aria-hidden="true">←</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[10.5px] font-extrabold tracking-[.1em] uppercase text-primary-deep">{p.prev.label}</span>
+                  <span className={`block text-[10.5px] font-extrabold tracking-[.1em] uppercase ${t.navText}`}>{p.prev.label}</span>
                   <span className="block text-[13px] font-bold leading-snug line-2 mt-0.5">{p.prev.title}</span>
                   <span className="block text-[10.5px] text-ink-muted mt-0.5">{p.prev.meta}</span>
                 </span>
@@ -205,12 +237,12 @@ export default function ItemDetail(p: ItemDetailProps) {
             {p.next && (
               <Link href={p.next.href} className="card-pop group flex items-center gap-3.5 !rounded-[1.5rem] px-4 py-4 min-h-[44px]">
                 <span className="min-w-0 flex-1 text-right">
-                  <span className="block text-[10.5px] font-extrabold tracking-[.1em] uppercase text-primary-deep">{p.next.label}</span>
+                  <span className={`block text-[10.5px] font-extrabold tracking-[.1em] uppercase ${t.navText}`}>{p.next.label}</span>
                   <span className="block text-[13px] font-bold leading-snug line-2 mt-0.5">{p.next.title}</span>
                   <span className="block text-[10.5px] text-ink-muted mt-0.5">{p.next.meta}</span>
                 </span>
-                <span className="w-11 h-11 shrink-0 rounded-full bg-primary-soft text-primary-deep grid place-items-center text-lg
-                                 font-extrabold transition group-hover:bg-[image:var(--grad)] group-hover:text-white group-hover:translate-x-0.5" aria-hidden="true">→</span>
+                <span className={`w-11 h-11 shrink-0 rounded-full ${t.navBg} ${t.navText} grid place-items-center text-lg
+                                 font-extrabold transition ${t.navHover} group-hover:text-white group-hover:translate-x-0.5`} aria-hidden="true">→</span>
               </Link>
             )}
           </nav>

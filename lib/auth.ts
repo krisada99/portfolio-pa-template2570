@@ -104,7 +104,7 @@ export async function logout(): Promise<void> {
 /*  ล็อกอิน + กันเดารหัสผ่าน                                            */
 /* ------------------------------------------------------------------ */
 
-async function clientIp(): Promise<string> {
+export async function clientIp(): Promise<string> {
   const h = await headers()
   const fwd = h.get('x-forwarded-for')
   return (fwd ? fwd.split(',')[0]! : h.get('x-real-ip') ?? '').trim() || 'unknown'

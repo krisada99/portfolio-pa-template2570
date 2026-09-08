@@ -93,3 +93,19 @@ export function currentFiscalYear(d = new Date()): number {
   const be = d.getFullYear() + 543
   return d.getMonth() + 1 >= 10 ? be + 1 : be
 }
+
+/**
+ * เมนูที่ควรไฮไลต์สำหรับแต่ละ path — ตรงกับตัวแปร $active ของเว็บ PHP
+ * หน้ารายละเอียดไม่มีเมนูของตัวเอง จึงยืมของหมวดที่มันสังกัด
+ * (ผลงาน/ตัวชี้วัด → PA, รางวัล/อบรม → การพัฒนาตนเอง)
+ */
+export type MenuKey = 'home' | 'pa' | 'develop' | 'about' | 'contact' | ''
+
+export function activeMenu(path: string): MenuKey {
+  if (path === '/') return 'home'
+  if (path.startsWith('/pa') || path.startsWith('/work') || path.startsWith('/indicator')) return 'pa'
+  if (path.startsWith('/development') || path.startsWith('/training') || path.startsWith('/award')) return 'develop'
+  if (path.startsWith('/about')) return 'about'
+  if (path.startsWith('/contact')) return 'contact'
+  return ''
+}

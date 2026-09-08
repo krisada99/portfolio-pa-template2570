@@ -88,6 +88,10 @@ export default async function AwardPage({ params }: { params: Promise<{ id: stri
         href: `/award/${neighbors.next.id}`, label: 'รางวัลถัดไป', title: neighbors.next.title,
         meta: `📅 ${thaiDate(neighbors.next.award_date)} · ระดับ${neighbors.next.level}`,
       } : null}
+      asideBackHref="/development"
+      asideBackLabel="🌱 กลับหน้าการพัฒนาตนเอง"
+      editHref="/admin/awards"
+      editLabel="✏️ แก้ไขรางวัลนี้"
       footerHref="/development"
       footerLabel={`ดูรางวัลและเกียรติคุณทั้งหมด (${all.length} รางวัล)`}
     />

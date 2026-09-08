@@ -9,6 +9,8 @@ import { domainTheme, currentAcademicYear } from '@/lib/theme'
 import WorkCard from '@/components/WorkCard'
 import CountUp from '@/components/CountUp'
 
+export const metadata = { title: 'หน้าแรก' }
+
 /**
  * หน้าแรก — แปลงมาจาก index.php ของเว็บ PHP ให้โครงสร้างและข้อความตรงกัน
  *   HERO → ความครบถ้วนของแฟ้ม → 3 ด้าน → ผลงานล่าสุด → แบนเนอร์ PA
