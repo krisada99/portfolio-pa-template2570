@@ -80,3 +80,10 @@ export function youtubeId(url: string | null | undefined): string | null {
   const m = (url ?? '').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/)
   return m?.[1] ?? null
 }
+
+
+/** ตัดคำนำหน้าชื่อออกแล้วเอาอักษรแรก — ใช้ทำอักษรย่อในหลังบ้าน (ตรงกับ admin/_layout.php) */
+export function initialOf(fullName: string | null | undefined): string {
+  const s = (fullName ?? '').replace(/^(นางสาว|นาย|นาง|ดร\.|ว่าที่ ร\.ต\.)\s*/u, '')
+  return s.slice(0, 1) || 'ค'
+}
