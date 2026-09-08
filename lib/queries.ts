@@ -319,3 +319,73 @@ export const getItemAttachmentCounts = cache(
     for (const r of files) out.set(Number(r.entity_id), { ...get(Number(r.entity_id)), files: Number(r.n) })
     return out
   })
+
+
+/* ---------------- ผลงานแบบแบ่งหน้า + จำนวนรูป/ไฟล์ (ใช้ในหน้าตัวชี้วัด) ---------------- */
+
+export interface WorkRow extends Work {
+  image_count: number
+  file_count: number
+}
+
+export interface WorkPage {
+  rows: WorkRow[]
+  total: number
+  page: number
+  last_page: number
+}
+
+export type WorkSort = 'latest' | 'oldest' | 'popular' | 'title'
+
+const SORT_SQL: Record<WorkSort, string> = {
+  latest: 'w.work_date DESC, w.id DESC',
+  oldest: 'w.work_date ASC, w.id ASC',
+  popular: 'w.view_count DESC, w.id DESC',
+  title: 'w.title ASC',
+}
+
+/** ค้นหา/กรอง/เรียง/แบ่งหน้า — ตรงกับ Repository::works() ของเว็บ PHP */
+export async function getWorkPage(opts: {
+  indicatorId?: number; academicYear?: number; q?: string
+  sort?: WorkSort; page?: number; perPage?: number
+}): Promise<WorkPage> {
+  const perPage = Math.min(48, Math.max(1, opts.perPage ?? 9))
+  const page = Math.max(1, opts.page ?? 1)
+  const sort = SORT_SQL[opts.sort ?? 'latest'] ?? SORT_SQL.latest
+
+  const where = ["w.deleted_at IS NULL", "w.status = 'published'"]
+  const args: (string | number)[] = []
+  if (opts.indicatorId) { where.push('w.indicator_id = ?'); args.push(opts.indicatorId) }
+  if (opts.academicYear) { where.push('w.academic_year = ?'); args.push(opts.academicYear) }
+  if (opts.q) {
+    where.push('(w.title LIKE ? OR w.summary LIKE ? OR w.tags LIKE ?)')
+    const like = `%${opts.q}%`
+    args.push(like, like, like)
+  }
+  const cond = where.join(' AND ')
+
+  const total = Number(await scalar<number>(
+    `SELECT COUNT(*) FROM works w WHERE ${cond}`, args) ?? 0)
+  const lastPage = Math.max(1, Math.ceil(total / perPage))
+  const safePage = Math.min(page, lastPage)
+
+  const rows = await all<WorkRow>(
+    `SELECT w.*, i.code AS indicator_code, i.name AS indicator_name, d.code AS domain_code,
+            (SELECT COUNT(*) FROM work_images wi WHERE wi.work_id = w.id) AS image_count,
+            (SELECT COUNT(*) FROM work_files wf WHERE wf.work_id = w.id)  AS file_count
+     FROM works w
+     JOIN indicators i ON i.id = w.indicator_id
+     JOIN domains d ON d.id = i.domain_id
+     WHERE ${cond}
+     ORDER BY ${sort}
+     LIMIT ? OFFSET ?`, [...args, perPage, (safePage - 1) * perPage])
+
+  return { rows, total, page: safePage, last_page: lastPage }
+}
+
+/** ตัวชี้วัดก่อนหน้า/ถัดไป ตามลำดับด้านและ sort_order */
+export const getIndicatorNeighbors = cache(async (id: number) => {
+  const list = await getIndicators()
+  const i = list.findIndex((x) => x.id === id)
+  return { prev: i > 0 ? list[i - 1]! : null, next: i >= 0 && i < list.length - 1 ? list[i + 1]! : null }
+})
