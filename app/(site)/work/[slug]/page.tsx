@@ -1,10 +1,20 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getWorkBySlug, getWorkImages, getWorkFiles, getRelatedWorks } from '@/lib/queries'
+import { getWorkBySlug, getWorkImages, getWorkFiles, getRelatedWorks, getWorks } from '@/lib/queries'
 import { domainTheme, thaiDate } from '@/lib/theme'
 import { fileUrl } from '@/lib/media'
 import Gallery from '@/components/Gallery'
 import WorkCard from '@/components/WorkCard'
+
+/**
+ * สร้างหน้าผลงานทุกชิ้นไว้ล่วงหน้าตอน build
+ * ผู้ชมจะได้หน้าจาก CDN ทันที ไม่ต้องรอเซิร์ฟเวอร์ไปถามฐานข้อมูลข้ามทวีป
+ * เมื่อครูแก้ข้อมูล action ในหลังบ้านเรียก revalidatePath ให้หน้าอัปเดตเอง
+ */
+export async function generateStaticParams() {
+  const works = await getWorks()
+  return works.map((w) => ({ slug: w.slug }))
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params

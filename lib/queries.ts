@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { all, one, scalar } from './db'
 import type {
   Profile, Domain, Indicator, Work, WorkImage, WorkFile, Agreement,
@@ -10,10 +11,10 @@ import type {
  * โปรไฟล์ครู — คืน null ถ้าฐานข้อมูลยังไม่พร้อม
  * ต้องกันไว้ เพราะ layout เรียกใช้ทุกหน้า ถ้าโยน error ตอนยังไม่ติดตั้งเว็บจะ 500 ทั้งเว็บ
  */
-export const getProfile = async (): Promise<Profile | null> => {
+export const getProfile = cache(async (): Promise<Profile | null> => {
   try { return await one<Profile>('SELECT * FROM teacher_profile WHERE id = 1') }
   catch { return null }
-}
+})
 
 export const getEducations = () =>
   all<Education>('SELECT * FROM educations WHERE deleted_at IS NULL ORDER BY sort_order, year_th DESC')
@@ -21,20 +22,20 @@ export const getEducations = () =>
 export const getCareerPaths = () =>
   all<CareerPath>('SELECT * FROM career_paths WHERE deleted_at IS NULL ORDER BY sort_order')
 
-export const getSetting = async (key: string): Promise<string | null> => {
+export const getSetting = cache(async (key: string): Promise<string | null> => {
   try { return await scalar<string>('SELECT value FROM site_settings WHERE key = ?', [key]) }
   catch { return null }
-}
+})
 
 /* ---------------- ด้าน / ตัวชี้วัด ---------------- */
 
-export const getDomains = () =>
-  all<Domain>('SELECT * FROM domains ORDER BY code')
+export const getDomains = cache(() =>
+  all<Domain>('SELECT * FROM domains ORDER BY code'))
 
-export const getIndicators = () =>
+export const getIndicators = cache(() =>
   all<Indicator>(`SELECT i.*, d.code AS domain_code, d.name AS domain_name
                   FROM indicators i JOIN domains d ON d.id = i.domain_id
-                  ORDER BY d.code, i.sort_order`)
+                  ORDER BY d.code, i.sort_order`))
 
 export const getIndicator = (id: number) =>
   one<Indicator>(`SELECT i.*, d.code AS domain_code, d.name AS domain_name
@@ -170,17 +171,18 @@ export const getItemFiles = (type: 'award' | 'self_dev', id: number) =>
 
 /* ---------------- ตัวเลขสรุปหน้าแรก ---------------- */
 
-export async function getStats() {
-  const [works, images, hours, awards] = await Promise.all([
-    scalar<number>("SELECT COUNT(*) FROM works WHERE deleted_at IS NULL AND status='published'"),
-    scalar<number>('SELECT COUNT(*) FROM work_images'),
-    scalar<number>('SELECT COALESCE(SUM(hours),0) FROM self_developments WHERE deleted_at IS NULL'),
-    scalar<number>('SELECT COUNT(*) FROM awards WHERE deleted_at IS NULL'),
-  ])
+/** ตัวเลขสรุป — รวมเป็นคำสั่งเดียว เพราะการวิ่งไปฐานข้อมูลแต่ละครั้งมีค่าหน่วงราว 150 ms */
+export const getStats = cache(async () => {
+  const r = await one<{ works: number; images: number; hours: number; awards: number }>(`
+    SELECT
+      (SELECT COUNT(*) FROM works WHERE deleted_at IS NULL AND status='published') AS works,
+      (SELECT COUNT(*) FROM work_images)                                           AS images,
+      (SELECT COALESCE(SUM(hours),0) FROM self_developments WHERE deleted_at IS NULL) AS hours,
+      (SELECT COUNT(*) FROM awards WHERE deleted_at IS NULL)                       AS awards`)
   return {
-    works: Number(works ?? 0),
-    images: Number(images ?? 0),
-    hours: Number(hours ?? 0),
-    awards: Number(awards ?? 0),
+    works: Number(r?.works ?? 0),
+    images: Number(r?.images ?? 0),
+    hours: Number(r?.hours ?? 0),
+    awards: Number(r?.awards ?? 0),
   }
-}
+})

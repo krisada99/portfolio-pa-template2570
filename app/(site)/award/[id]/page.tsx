@@ -1,8 +1,14 @@
 import { notFound } from 'next/navigation'
-import { getAward, getItemImages, getItemFiles } from '@/lib/queries'
+import { getAward, getItemImages, getItemFiles, getAwards } from '@/lib/queries'
 import { thaiDate } from '@/lib/theme'
 import ItemDetail from '@/components/ItemDetail'
 import type { GalleryItem } from '@/components/Gallery'
+
+/** สร้างหน้ารางวัลทุกใบไว้ล่วงหน้าตอน build */
+export async function generateStaticParams() {
+  const list = await getAwards()
+  return list.map((a) => ({ id: String(a.id) }))
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

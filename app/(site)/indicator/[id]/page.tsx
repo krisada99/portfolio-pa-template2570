@@ -4,6 +4,12 @@ import { getIndicator, getWorks, getIndicators } from '@/lib/queries'
 import { domainTheme } from '@/lib/theme'
 import WorkCard from '@/components/WorkCard'
 
+/** สร้างหน้าตัวชี้วัดทั้ง 15 ตัวไว้ล่วงหน้าตอน build */
+export async function generateStaticParams() {
+  const list = await getIndicators()
+  return list.map((i) => ({ id: String(i.id) }))
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const ind = await getIndicator(Number(id))

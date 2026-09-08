@@ -61,11 +61,21 @@ export async function getStatus(): Promise<SetupStatus> {
   return s
 }
 
-/** ยังติดตั้งไม่เสร็จ = ยังไม่มีบัญชีผู้ดูแล */
+/**
+ * ยังติดตั้งไม่เสร็จ = ยังไม่มีบัญชีผู้ดูแล
+ *
+ * ฟังก์ชันนี้ถูกเรียกทุกครั้งที่เปิดหน้าเว็บ (จาก layout ของหน้าบ้าน)
+ * เมื่อติดตั้งแล้วจะไม่มีทางกลับไปเป็น "ยังไม่ติดตั้ง" อีก จึงจำผลไว้ได้เลย
+ * ประหยัดการวิ่งไปฐานข้อมูล 1 ครั้งต่อการเปิดหน้า 1 ครั้ง
+ */
+let installedOnce = false
+
 export async function isFresh(): Promise<boolean> {
+  if (installedOnce) return false
   try {
-    const n = await scalar<number>('SELECT COUNT(*) FROM users')
-    return Number(n ?? 0) === 0
+    const n = Number(await scalar<number>('SELECT COUNT(*) FROM users') ?? 0)
+    if (n > 0) installedOnce = true
+    return n === 0
   } catch {
     return true   // ตารางยังไม่มี = ยังไม่ได้ติดตั้งแน่นอน
   }

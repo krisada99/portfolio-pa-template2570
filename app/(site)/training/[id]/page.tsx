@@ -1,8 +1,14 @@
 import { notFound } from 'next/navigation'
-import { getSelfDev, getItemImages, getItemFiles } from '@/lib/queries'
+import { getSelfDev, getItemImages, getItemFiles, getSelfDevs } from '@/lib/queries'
 import { thaiDate } from '@/lib/theme'
 import ItemDetail from '@/components/ItemDetail'
 import type { GalleryItem } from '@/components/Gallery'
+
+/** สร้างหน้าการพัฒนาตนเองทุกรายการไว้ล่วงหน้าตอน build */
+export async function generateStaticParams() {
+  const list = await getSelfDevs()
+  return list.map((s) => ({ id: String(s.id) }))
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
