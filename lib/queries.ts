@@ -230,3 +230,54 @@ export async function getIndicatorOverviewGrouped(
   }
   return grouped
 }
+
+
+/* ---------------- ตัวเลขสรุปหน้าแรก (ตรงกับ Repository::stats ของเว็บ PHP) ---------------- */
+
+export interface HomeStats {
+  total_works: number
+  works_by_domain: Map<number, number>
+  filled: Map<number, number>
+  total_per_domain: Map<number, number>
+  filled_total: number
+  indicator_total: number
+  self_dev_hours: number
+  awards: number
+}
+
+export const getHomeStats = cache(async (): Promise<HomeStats> => {
+  const [indicators, counts, byDomain, totals] = await Promise.all([
+    getIndicators(),
+    getWorkCountByIndicator(),
+    all<{ code: number; n: number }>(
+      `SELECT d.code AS code, COUNT(w.id) AS n
+       FROM domains d
+       JOIN indicators i ON i.domain_id = d.id
+       LEFT JOIN works w ON w.indicator_id = i.id AND w.deleted_at IS NULL AND w.status = 'published'
+       GROUP BY d.code`),
+    one<{ works: number; hours: number; awards: number }>(`
+      SELECT
+        (SELECT COUNT(*) FROM works WHERE deleted_at IS NULL AND status='published') AS works,
+        (SELECT COALESCE(SUM(hours),0) FROM self_developments WHERE deleted_at IS NULL) AS hours,
+        (SELECT COUNT(*) FROM awards WHERE deleted_at IS NULL) AS awards`),
+  ])
+
+  const filled = new Map<number, number>([[1, 0], [2, 0], [3, 0]])
+  const totalPerDomain = new Map<number, number>([[1, 0], [2, 0], [3, 0]])
+  for (const ind of indicators) {
+    const dc = Number(ind.domain_code)
+    totalPerDomain.set(dc, (totalPerDomain.get(dc) ?? 0) + 1)
+    if ((counts.get(ind.id) ?? 0) > 0) filled.set(dc, (filled.get(dc) ?? 0) + 1)
+  }
+
+  return {
+    total_works: Number(totals?.works ?? 0),
+    works_by_domain: new Map(byDomain.map((r) => [Number(r.code), Number(r.n)])),
+    filled,
+    total_per_domain: totalPerDomain,
+    filled_total: [...filled.values()].reduce((a, b) => a + b, 0),
+    indicator_total: indicators.length,
+    self_dev_hours: Number(totals?.hours ?? 0),
+    awards: Number(totals?.awards ?? 0),
+  }
+})
