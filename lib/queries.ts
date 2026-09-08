@@ -389,3 +389,30 @@ export const getIndicatorNeighbors = cache(async (id: number) => {
   const i = list.findIndex((x) => x.id === id)
   return { prev: i > 0 ? list[i - 1]! : null, next: i >= 0 && i < list.length - 1 ? list[i + 1]! : null }
 })
+
+
+/* ---------------- ผลงานก่อนหน้า / ถัดไป ในตัวชี้วัดเดียวกัน ---------------- */
+
+export interface WorkNeighbor { id: number; title: string; slug: string; work_date: string | null }
+
+export async function getWorkNeighbors(indicatorId: number, workDate: string | null, id: number) {
+  const [prev, next] = await Promise.all([
+    one<WorkNeighbor>(
+      `SELECT id, title, slug, work_date FROM works
+       WHERE indicator_id = ? AND status='published' AND deleted_at IS NULL
+         AND (work_date < ? OR (work_date = ? AND id < ?))
+       ORDER BY work_date DESC, id DESC LIMIT 1`, [indicatorId, workDate, workDate, id]),
+    one<WorkNeighbor>(
+      `SELECT id, title, slug, work_date FROM works
+       WHERE indicator_id = ? AND status='published' AND deleted_at IS NULL
+         AND (work_date > ? OR (work_date = ? AND id > ?))
+       ORDER BY work_date ASC, id ASC LIMIT 1`, [indicatorId, workDate, workDate, id]),
+  ])
+  return { prev, next }
+}
+
+/** จำนวนผลงานทั้งหมดในตัวชี้วัดหนึ่ง (ใช้บอกบริบทบนปุ่ม) */
+export const getIndicatorWorkTotal = async (indicatorId: number): Promise<number> =>
+  Number(await scalar<number>(
+    `SELECT COUNT(*) FROM works WHERE indicator_id = ? AND status='published' AND deleted_at IS NULL`,
+    [indicatorId]) ?? 0)

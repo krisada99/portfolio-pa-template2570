@@ -46,3 +46,37 @@ export function thaiDate(value: string | null | undefined, short = true): string
   const m = (short ? TH_SHORT : TH_FULL)[d.getMonth()]
   return `${d.getDate()} ${m} ${d.getFullYear() + 543}`
 }
+
+
+/** ไอคอนตามชนิดไฟล์ — ตรงกับ file_icon() ของเว็บ PHP */
+export function fileIcon(mime: string): string {
+  const m = (mime ?? '').toLowerCase()
+  if (m.includes('pdf')) return '📕'
+  if (m.includes('word') || m.includes('msword')) return '📘'
+  if (m.includes('sheet') || m.includes('excel')) return '📊'
+  if (m.includes('presentation') || m.includes('powerpoint')) return '📙'
+  if (m.startsWith('image/')) return '🖼️'
+  if (m.includes('zip')) return '🗜️'
+  return '📄'
+}
+
+/** ขนาดไฟล์อ่านง่าย — ตรงกับ human_size() ของเว็บ PHP */
+export function humanSize(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB']
+  let b = Number(bytes) || 0
+  let i = 0
+  while (b >= 1024 && i < 3) { b /= 1024; i++ }
+  return `${i === 0 ? Math.trunc(b) : b.toFixed(1)} ${units[i]}`
+}
+
+/** ตัดข้อความให้สั้น — ตรงกับ excerpt() ของเว็บ PHP */
+export function excerpt(text: string | null | undefined, len = 160): string {
+  const t = (text ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+  return t.length <= len ? t : t.slice(0, len).trimEnd() + '…'
+}
+
+/** ดึง YouTube ID จาก url ทุกรูปแบบ */
+export function youtubeId(url: string | null | undefined): string | null {
+  const m = (url ?? '').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/)
+  return m?.[1] ?? null
+}
