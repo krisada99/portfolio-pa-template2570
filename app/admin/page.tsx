@@ -8,6 +8,7 @@ import { domainTheme, currentAcademicYear, currentFiscalYear, excerpt } from '@/
 import PageHead from '@/components/admin/PageHead'
 import CountUp from '@/components/CountUp'
 import { NewYearProvider, NewYearButton } from '@/components/admin/NewYearModal'
+import { PickIndicatorProvider, PickIndicatorButton } from '@/components/admin/PickIndicatorModal'
 
 /** แดชบอร์ดหลังบ้าน — แปลงมาจาก admin/index.php ของเว็บ PHP */
 
@@ -25,6 +26,12 @@ export default async function AdminDashboard() {
     getRecentWorksIncludingDraft(6), getWorksAddedThisMonth(),
   ])
 
+  const groups = domains.map((d) => ({
+    code: Number(d.code),
+    name: d.name,
+    indicators: indicators.filter((i) => Number(i.domain_code) === Number(d.code))
+      .map((i) => ({ id: Number(i.id), code: i.code, name: i.name })),
+  }))
   const nextFiscalYear = Number(agreements[0]?.fiscal_year ?? currentFiscalYear() - 1) + 1
   const yearOpts = agreements.map((a) => ({ id: Number(a.id), fiscal_year: Number(a.fiscal_year) }))
 
@@ -69,11 +76,12 @@ export default async function AdminDashboard() {
   ]
 
   return (
+    <PickIndicatorProvider groups={groups}>
     <NewYearProvider nextYear={nextFiscalYear} years={yearOpts}>
       <PageHead
         title={`สวัสดีค่ะ ${nickname} 🌸`}
         sub={`ปีการศึกษา ${currentAcademicYear()} ภาคเรียนที่ ${semester}`}
-        actions={<Link href="/admin/pa" className="btn btn-primary text-[12.5px]">+ เพิ่มผลงานใหม่</Link>}
+        actions={<PickIndicatorButton className="btn btn-primary text-[12.5px]">+ เพิ่มผลงานใหม่</PickIndicatorButton>}
       />
 
       {/* ================= แถบต้อนรับ ================= */}
@@ -94,7 +102,7 @@ export default async function AdminDashboard() {
               {newThisMonth > 0 && <> · เดือนนี้เพิ่มแล้ว <b>{newThisMonth}</b> ชิ้น 🔥</>}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/admin/pa" className="btn btn-white btn-sm !text-[12.5px]">+ เพิ่มผลงานใหม่</Link>
+              <PickIndicatorButton className="btn btn-white btn-sm !text-[12.5px]">+ เพิ่มผลงานใหม่</PickIndicatorButton>
               <Link href="/admin/pa" className="btn btn-sm !text-[12.5px] bg-white/20 text-white ring-1 ring-inset ring-white/45 hover:bg-white/30 hover:-translate-y-0.5">📋 จัดการข้อตกลง PA</Link>
               <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn-sm !text-[12.5px] bg-white/20 text-white ring-1 ring-inset ring-white/45 hover:bg-white/30 hover:-translate-y-0.5">👁️ ดูหน้าเว็บ</a>
             </div>
@@ -206,7 +214,7 @@ export default async function AdminDashboard() {
                     {indicators.filter((ind) => Number(ind.domain_code) === c).map((ind) => {
                       const has = !missing.includes(ind.code)
                       return (
-                        <Link key={ind.id} href={`/admin/pa`} title={`${ind.code} ${ind.name}`}
+                        <Link key={ind.id} href={`/admin/indicator/${ind.id}`} title={`${ind.code} ${ind.name}`}
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition hover:-translate-y-0.5 ${
                             has ? '' : 'border border-dashed border-[color:var(--border)] text-ink-faint bg-white hover:border-primary-line'}`}
                           style={has ? { background: t.soft, color: t.deep } : undefined}>
@@ -292,7 +300,7 @@ export default async function AdminDashboard() {
           <div className="text-center py-10">
             <div className="text-5xl float">📚</div>
             <p className="mt-3 text-[13px] text-ink-muted">ยังไม่มีผลงานในแฟ้ม — เริ่มเพิ่มผลงานชิ้นแรกกันเลย</p>
-            <Link href="/admin/works/new" className="btn btn-primary btn-sm mt-4">+ เพิ่มผลงานใหม่</Link>
+            <PickIndicatorButton className="btn btn-primary btn-sm mt-4">+ เพิ่มผลงานใหม่</PickIndicatorButton>
           </div>
         ) : (
           <div className="overflow-x-auto mt-4">
@@ -308,7 +316,7 @@ export default async function AdminDashboard() {
                       <td className="col-no" data-label="ลำดับ">{n + 1}</td>
                       <td data-label="ชื่อผลงาน"><b className="text-ink">{excerpt(r.title, 46)}</b></td>
                       <td data-label="ตัวชี้วัด">
-                        <Link href={`/admin/works/${r.id}`}
+                        <Link href={`/admin/indicator/${r.indicator_id}`}
                           className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-bold hover:-translate-y-0.5 transition"
                           style={{ background: t.soft, color: t.deep }}>
                           {r.indicator_code} {(r.indicator_name ?? '').slice(0, 18)}
@@ -322,7 +330,7 @@ export default async function AdminDashboard() {
                       </td>
                       <td data-label="เข้าชม">{r.view_count || '—'}</td>
                       <td data-label="จัดการ">
-                        <Link href={`/admin/works/${r.id}`} className="icon-btn edit" title="แก้ไข">✏️</Link>
+                        <Link href={`/admin/indicator/${r.indicator_id}?edit=${r.id}`} className="icon-btn edit" title="แก้ไข">✏️</Link>
                       </td>
                     </tr>
                   )
@@ -333,5 +341,6 @@ export default async function AdminDashboard() {
         )}
       </section>
     </NewYearProvider>
+    </PickIndicatorProvider>
   )
 }

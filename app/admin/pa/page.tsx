@@ -185,7 +185,7 @@ export default async function PaAdmin({
                       </div>
 
                       <div className="shrink-0 flex items-center gap-2 flex-wrap lg:justify-end">
-                        <Link href={`/admin/works?ind=${r.id}`} className="btn btn-ghost btn-sm whitespace-nowrap"
+                        <Link href={`/admin/indicator/${r.id}`} className="btn btn-ghost btn-sm whitespace-nowrap"
                           title="เพิ่ม/แก้ไข/ลบผลงานของตัวชี้วัดนี้">
                           📚 ผลงาน <b className="ml-0.5 rounded-full px-2 py-0.5 text-[11px] text-white" style={{ background: t.solid }}>{n}</b>
                         </Link>

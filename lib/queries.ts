@@ -356,13 +356,18 @@ const SORT_SQL: Record<WorkSort, string> = {
 export async function getWorkPage(opts: {
   indicatorId?: number; academicYear?: number; q?: string
   sort?: WorkSort; page?: number; perPage?: number
+  /** หลังบ้านต้องเห็นฉบับร่างของตัวเองด้วย */
+  includeDraft?: boolean
+  status?: 'draft' | 'published'
 }): Promise<WorkPage> {
   const perPage = Math.min(48, Math.max(1, opts.perPage ?? 9))
   const page = Math.max(1, opts.page ?? 1)
   const sort = SORT_SQL[opts.sort ?? 'latest'] ?? SORT_SQL.latest
 
-  const where = ["w.deleted_at IS NULL", "w.status = 'published'"]
+  const where = ['w.deleted_at IS NULL']
   const args: (string | number)[] = []
+  if (opts.status) { where.push('w.status = ?'); args.push(opts.status) }
+  else if (!opts.includeDraft) where.push("w.status = 'published'")
   if (opts.indicatorId) { where.push('w.indicator_id = ?'); args.push(opts.indicatorId) }
   if (opts.academicYear) { where.push('w.academic_year = ?'); args.push(opts.academicYear) }
   if (opts.q) {

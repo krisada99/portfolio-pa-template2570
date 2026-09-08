@@ -1,10 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getWorkPage, type WorkSort } from '@/lib/queries'
 import { imageUrl, IMG } from '@/lib/media'
 
 /**
  * API ค้นหาผลงาน — ตรงกับ api/works.php ของเว็บ PHP
- * ใช้โดยหน้าตัวชี้วัด เวลาผู้ใช้ค้นหา กรองปี เรียง หรือเปลี่ยนหน้า
+ * ใช้โดยหน้าตัวชี้วัดฝั่งหน้าเว็บ และตารางผลงานในหลังบ้าน
+ *
+ * admin=1 จะรวมฉบับร่างมาด้วย — แต่ต้องล็อกอินจริงเท่านั้น ไม่งั้นข้อมูลที่ยังไม่เผยแพร่จะรั่ว
  */
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +16,8 @@ const SORTS: WorkSort[] = ['latest', 'oldest', 'popular', 'title']
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams
   const sortRaw = p.get('sort') ?? 'latest'
+  const statusRaw = p.get('status') ?? ''
+  const isAdmin = p.get('admin') === '1' && !!(await getSession())
 
   const result = await getWorkPage({
     indicatorId: Number(p.get('indicator_id')) || undefined,
@@ -21,6 +26,8 @@ export async function GET(req: NextRequest) {
     sort: (SORTS as string[]).includes(sortRaw) ? (sortRaw as WorkSort) : 'latest',
     page: Number(p.get('page')) || 1,
     perPage: Number(p.get('per_page')) || 9,
+    includeDraft: isAdmin,
+    status: isAdmin && (statusRaw === 'draft' || statusRaw === 'published') ? statusRaw : undefined,
   })
 
   return NextResponse.json({
@@ -35,6 +42,7 @@ export async function GET(req: NextRequest) {
       domain_code: w.domain_code,
       semester: w.semester,
       academic_year: w.academic_year,
+      status: w.status,
       view_count: w.view_count,
       is_featured: w.is_featured,
       image_count: w.image_count,
