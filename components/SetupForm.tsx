@@ -1,17 +1,26 @@
 'use client'
 
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Field, inputClass } from '@/components/admin/Field'
 import RecoveryCodeBox from '@/components/RecoveryCodeBox'
-import { doInstall } from '@/app/setup/actions'
+import { doInstall, finishSetup } from '@/app/setup/actions'
 
 /**
  * ฟอร์มติดตั้ง — ไม่ใช้ redirect เพราะต้องโชว์รหัสกู้คืนที่ได้กลับมา
  * ถ้า redirect รหัสจะต้องเดินทางผ่าน URL ซึ่งไปโผล่ในประวัติเบราว์เซอร์และ log ของเซิร์ฟเวอร์
  */
 export default function SetupForm() {
+  const router = useRouter()
   const [busy, setBusy] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+
+  /** ล้างแคชก่อนออกจากหน้านี้ ไม่งั้นหน้าเว็บที่สร้างไว้ตอนยังไม่มีตารางจะยังเด้งกลับมา /setup */
+  const go = async (href: string) => {
+    setLeaving(true)
+    try { await finishSetup() } catch { /* ล้างแคชไม่สำเร็จก็ยังไปต่อได้ */ }
+    router.push(href)
+  }
   const [err, setErr] = useState('')
   const [done, setDone] = useState<{ code?: string; log: string[] } | null>(null)
 
@@ -29,8 +38,10 @@ export default function SetupForm() {
         {done.code && <div className="mt-5"><RecoveryCodeBox code={done.code} /></div>}
 
         <div className="mt-5 flex gap-3 justify-center">
-          <Link href="/login" className="btn btn-primary">เข้าสู่ระบบ</Link>
-          <Link href="/" className="btn btn-ghost">ดูหน้าเว็บ</Link>
+          <button type="button" className="btn btn-primary" disabled={leaving}
+            onClick={() => void go('/login')}>{leaving ? 'กำลังไป…' : 'เข้าสู่ระบบ'}</button>
+          <button type="button" className="btn btn-ghost" disabled={leaving}
+            onClick={() => void go('/')}>ดูหน้าเว็บ</button>
         </div>
       </div>
     )

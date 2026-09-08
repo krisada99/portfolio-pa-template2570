@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Profile } from '@/lib/types'
 import { imageUrl, focalPosition, IMG } from '@/lib/media'
 import { initialOf, activeMenu, type MenuKey } from '@/lib/theme'
@@ -16,11 +16,26 @@ const MENU: { key: MenuKey; href: string; label: string }[] = [
   { key: 'contact', href: '/contact', label: 'ติดต่อ' },
 ]
 
-export default function Header({
-  profile, loggedIn,
-}: { profile: Profile | null; loggedIn: boolean }) {
+export default function Header({ profile }: { profile: Profile | null }) {
   const path = usePathname()
   const [open, setOpen] = useState(false)
+
+  /**
+   * เช็คสถานะล็อกอินฝั่งเบราว์เซอร์ ไม่ใช่ฝั่งเซิร์ฟเวอร์
+   *
+   * ถ้า layout อ่าน cookie เอง หน้าสาธารณะทุกหน้าจะกลายเป็น dynamic
+   * เสียการแคชที่ CDN ทั้งเว็บ และพังตอนรันจริงด้วย (DYNAMIC_SERVER_USAGE)
+   * ปุ่มนี้เป็นแค่ทางลัด ไม่ใช่ด่านความปลอดภัย — /admin ตรวจสิทธิ์เองอยู่แล้ว
+   */
+  const [loggedIn, setLoggedIn] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/me', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => { if (alive) setLoggedIn(!!j.ok) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
   const cur = activeMenu(path)
 
   const admin = loggedIn
