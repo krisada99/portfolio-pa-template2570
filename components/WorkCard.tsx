@@ -6,7 +6,7 @@ import { domainTheme, thaiDate } from '@/lib/theme'
 export default function WorkCard({ work }: { work: Work }) {
   const t = domainTheme(work.domain_code)
   return (
-    <Link href={`/work/${work.slug}`} className="card card-hover overflow-hidden flex flex-col group">
+    <Link href={`/work/${work.slug}`} className="card-pop overflow-hidden flex flex-col group">
       <div className="relative h-[180px] bg-[color:var(--divider)] overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

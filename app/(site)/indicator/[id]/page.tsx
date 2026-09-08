@@ -55,7 +55,7 @@ export default async function IndicatorPage({ params }: { params: Promise<{ id: 
         <section className="pt-8 md:pt-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
             <div>
-              <span className="chip chip-gold">📚 หลักฐาน</span>
+              <span className="chip chip-accent">📚 หลักฐาน</span>
               <h2 className="mt-2.5 text-[24px] md:text-[32px] font-extrabold leading-tight">
                 ผลงานของ<span className="grad-text">ตัวชี้วัดนี้</span>
               </h2>
@@ -64,7 +64,7 @@ export default async function IndicatorPage({ params }: { params: Promise<{ id: 
           </div>
 
           {works.length === 0 ? (
-            <div className="card p-10 text-center text-ink-muted text-[14px]">ยังไม่มีผลงานในตัวชี้วัดนี้</div>
+            <div className="card-soft p-10 text-center text-ink-muted text-[14px]">ยังไม่มีผลงานในตัวชี้วัดนี้</div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {works.map((w) => <WorkCard key={w.id} work={w} />)}
@@ -74,7 +74,7 @@ export default async function IndicatorPage({ params }: { params: Promise<{ id: 
 
         <nav className="mt-10 grid sm:grid-cols-2 gap-4">
           {prev && (
-            <Link href={`/indicator/${prev.id}`} className="card card-hover p-4 flex items-center gap-3">
+            <Link href={`/indicator/${prev.id}`} className="card-pop p-4 flex items-center gap-3">
               <span className="w-9 h-9 rounded-full grid place-items-center shrink-0"
                     style={{ background: 'var(--primary-soft)' }}>←</span>
               <span className="min-w-0">
@@ -84,7 +84,7 @@ export default async function IndicatorPage({ params }: { params: Promise<{ id: 
             </Link>
           )}
           {next && (
-            <Link href={`/indicator/${next.id}`} className="card card-hover p-4 flex items-center gap-3 sm:col-start-2 text-right">
+            <Link href={`/indicator/${next.id}`} className="card-pop p-4 flex items-center gap-3 sm:col-start-2 text-right">
               <span className="min-w-0 ml-auto">
                 <span className="block text-[11.5px] text-ink-muted">ตัวชี้วัดถัดไป</span>
                 <span className="block font-bold text-[13.5px] line-2">{next.code} {next.name}</span>

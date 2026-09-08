@@ -24,7 +24,7 @@ export default async function AdminDashboard() {
       </div>
 
       {incomplete && (
-        <div className="card p-4 flex items-center gap-3" style={{ background: 'var(--gold-soft)', borderColor: 'var(--gold-line)' }}>
+        <div className="card-soft p-4 flex items-center gap-3" style={{ background: 'var(--gold-soft)', borderColor: 'var(--gold-line)' }}>
           <span className="text-xl">👋</span>
           <p className="text-[13.5px] flex-1">ยังไม่ได้กรอกข้อมูลครูให้ครบ — เริ่มจากหน้าโปรไฟล์ก่อนนะครับ</p>
           <Link href="/admin/profile" className="btn btn-gold !min-h-[36px] !text-[12.5px]">กรอกเลย</Link>
@@ -33,7 +33,7 @@ export default async function AdminDashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => (
-          <Link key={c.href} href={c.href} className="card card-hover p-5">
+          <Link key={c.href} href={c.href} className="card-pop p-5">
             <div className="text-2xl">{c.icon}</div>
             <div className="mt-1 text-[28px] font-extrabold grad-text leading-none">{c.n}</div>
             <div className="mt-1 text-[12.5px] text-ink-muted font-semibold">{c.label}</div>
@@ -41,7 +41,7 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <section className="card p-5">
+      <section className="card-soft p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-extrabold text-[16px]">ผลงานล่าสุด</h2>
           <Link href="/admin/works" className="text-[12.5px] font-bold text-primary-deep hover:underline">ดูทั้งหมด →</Link>

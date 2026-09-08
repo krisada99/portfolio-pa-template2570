@@ -22,7 +22,7 @@ export const areaClass =
 
 export function Card({ title, children, actions }: { title?: string; children: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    <section className="card p-5 md:p-6">
+    <section className="card-soft p-5 md:p-6">
       {(title || actions) && (
         <div className="flex items-center justify-between gap-3 mb-4">
           {title && <h2 className="font-extrabold text-[16px]">{title}</h2>}

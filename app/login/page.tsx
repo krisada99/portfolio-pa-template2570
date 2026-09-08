@@ -28,7 +28,7 @@ export default async function LoginPage({
   return (
     <div className="min-h-[80vh] grid place-items-center px-4 py-16">
       <div className="w-full max-w-[420px]">
-        <div className="card overflow-hidden">
+        <div className="card-soft overflow-hidden">
           <div className="p-6 text-white text-center" style={{ background: 'var(--grad-hero)' }}>
             <div className="text-3xl">🔐</div>
             <h1 className="mt-2 text-[20px] font-extrabold">เข้าสู่ระบบหลังบ้าน</h1>

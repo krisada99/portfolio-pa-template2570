@@ -23,12 +23,12 @@ export default async function ContactPage() {
 
       <div className="max-w-[820px] mx-auto px-4 md:px-10 -mt-8 relative">
         {items.length === 0 ? (
-          <div className="card p-8 text-center text-ink-muted">ยังไม่ได้กรอกข้อมูลติดต่อ</div>
+          <div className="card-soft p-8 text-center text-ink-muted">ยังไม่ได้กรอกข้อมูลติดต่อ</div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
             {items.map((i) => {
               const inner = (
-                <div className="card card-hover p-5 flex items-center gap-4 h-full">
+                <div className="card-pop p-5 flex items-center gap-4 h-full">
                   <span className="w-12 h-12 rounded-2xl grid place-items-center text-xl shrink-0"
                         style={{ background: 'var(--primary-soft)' }}>{i.icon}</span>
                   <div className="min-w-0">

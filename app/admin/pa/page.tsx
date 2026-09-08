@@ -34,7 +34,7 @@ export default async function PaAdmin({
         </div>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="card-soft overflow-hidden">
         <table className="w-full text-[13px]">
           <thead>
             <tr className="bg-[color:var(--divider)] text-left">

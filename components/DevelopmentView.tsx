@@ -36,7 +36,7 @@ export default async function DevelopmentView({ year }: { year?: number }) {
       </section>
 
       <div className="max-w-[1240px] mx-auto px-4 md:px-10 -mt-8 relative">
-        <div className="card p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="card-soft p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex gap-6">
             <div>
               <div className="text-[26px] font-extrabold grad-text leading-none">{items.length}</div>
@@ -54,9 +54,9 @@ export default async function DevelopmentView({ year }: { year?: number }) {
       <section className="max-w-[1240px] mx-auto px-4 md:px-10 pt-10">
         <SectionHead chip="📘 พัฒนาตนเอง" title="รายการ" accent={cur ? `ปีงบประมาณ ${cur}` : 'ทั้งหมด'} />
         {items.length === 0 ? (
-          <div className="card p-8 text-center text-ink-muted text-[14px]">ยังไม่มีรายการในปีนี้</div>
+          <div className="card-soft p-8 text-center text-ink-muted text-[14px]">ยังไม่มีรายการในปีนี้</div>
         ) : (
-          <div className="card overflow-hidden">
+          <div className="card-soft overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px] min-w-[780px]">
                 <thead>
@@ -96,11 +96,11 @@ export default async function DevelopmentView({ year }: { year?: number }) {
       <section className="max-w-[1240px] mx-auto px-4 md:px-10 pt-14">
         <SectionHead chip="🏆 เกียรติคุณ" title="รางวัลและ" accent="เกียรติคุณ" />
         {awards.length === 0 ? (
-          <div className="card p-8 text-center text-ink-muted text-[14px]">ยังไม่มีรางวัลในระบบ</div>
+          <div className="card-soft p-8 text-center text-ink-muted text-[14px]">ยังไม่มีรางวัลในระบบ</div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {awards.map((a) => (
-              <Link key={a.id} href={`/award/${a.id}`} className="card card-hover overflow-hidden flex flex-col group">
+              <Link key={a.id} href={`/award/${a.id}`} className="card-pop overflow-hidden flex flex-col group">
                 <div className="h-[170px] bg-[color:var(--divider)] overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={imageUrl({ source: a.image_source, ref: a.image_ref }, IMG.card)}
@@ -108,7 +108,7 @@ export default async function DevelopmentView({ year }: { year?: number }) {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]" />
                 </div>
                 <div className="p-4 flex flex-col flex-1">
-                  <span className="chip chip-gold !text-[11px] self-start">🏅 ระดับ{a.level}</span>
+                  <span className="chip chip-accent !text-[11px] self-start">🏅 ระดับ{a.level}</span>
                   <h3 className="mt-2 font-extrabold text-[14.5px] leading-snug line-2">{a.title}</h3>
                   <p className="mt-1 text-[12.5px] text-ink-muted line-2">{a.awarder}</p>
                   <p className="mt-auto pt-3 text-[11.5px] text-ink-faint">📅 {thaiDate(a.award_date) || '—'}</p>

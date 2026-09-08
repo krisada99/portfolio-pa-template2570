@@ -66,7 +66,7 @@ export default async function HomePage() {
             { n: stats.hours, label: 'ชั่วโมงพัฒนาตนเอง', icon: '🌱' },
             { n: stats.awards, label: 'รางวัลและเกียรติคุณ', icon: '🏆' },
           ].map((s) => (
-            <div key={s.label} className="card p-4 md:p-5 text-center">
+            <div key={s.label} className="card-soft p-4 md:p-5 text-center">
               <div className="text-2xl">{s.icon}</div>
               <div className="mt-1 text-[26px] md:text-[30px] font-extrabold grad-text leading-none">
                 {s.n.toLocaleString('th-TH')}
@@ -86,7 +86,7 @@ export default async function HomePage() {
             const list = indicators.filter((i) => i.domain_id === d.id)
             const total = list.reduce((s, i) => s + (counts.get(i.id) ?? 0), 0)
             return (
-              <div key={d.id} className="card overflow-hidden flex flex-col">
+              <div key={d.id} className="card-soft overflow-hidden flex flex-col">
                 <div className="p-5 text-white" style={{ background: t.grad }}>
                   <div className="text-2xl">{t.icon}</div>
                   <h3 className="mt-1.5 font-extrabold text-[16px] leading-snug">ด้านที่ {d.code}</h3>
@@ -122,7 +122,7 @@ export default async function HomePage() {
           right={<span className="text-[13px] text-ink-muted">ปีการศึกษา {currentAcademicYear()}</span>}
         />
         {latest.length === 0 ? (
-          <div className="card p-8 text-center text-ink-muted text-[14px]">ยังไม่มีผลงานในระบบ</div>
+          <div className="card-soft p-8 text-center text-ink-muted text-[14px]">ยังไม่มีผลงานในระบบ</div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {latest.map((w) => <WorkCard key={w.id} work={w} />)}

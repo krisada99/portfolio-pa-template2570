@@ -16,7 +16,7 @@ export default async function PaView({ year }: { year?: number }) {
   if (agreements.length === 0) {
     return (
       <div className="max-w-[820px] mx-auto px-4 py-20 text-center">
-        <div className="card p-10">
+        <div className="card-soft p-10">
           <p className="text-[15px] text-ink-muted">ยังไม่มีข้อตกลงในการพัฒนางานในระบบ</p>
         </div>
       </div>
@@ -49,7 +49,7 @@ export default async function PaView({ year }: { year?: number }) {
       </section>
 
       <div className="max-w-[1240px] mx-auto px-4 md:px-10 -mt-8 relative pb-6">
-        <div className="card p-5 md:p-6">
+        <div className="card-soft p-5 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <span className="chip">📄 ตอนที่ 1</span>
@@ -97,7 +97,7 @@ export default async function PaView({ year }: { year?: number }) {
                       style={{ background: t.grad }}>{t.icon}</span>
                 <h3 className="font-extrabold text-[15.5px]">ด้านที่ {d.code} · {d.name}</h3>
               </div>
-              <div className="card overflow-hidden">
+              <div className="card-soft overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-[13px] min-w-[720px]">
                     <thead>
@@ -135,7 +135,7 @@ export default async function PaView({ year }: { year?: number }) {
       {challenge && (
         <section className="max-w-[1240px] mx-auto px-4 md:px-10 pt-6">
           <SectionHead chip="🎯 ตอนที่ 2 (ส่วนที่ 2)" title="ประเด็น" accent="ท้าทาย" />
-          <div className="card p-5 md:p-6">
+          <div className="card-soft p-5 md:p-6">
             <h3 className="font-extrabold text-[17px]">{challenge.topic}</h3>
             <div className="mt-4 grid md:grid-cols-3 gap-4">
               {[

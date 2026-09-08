@@ -24,7 +24,7 @@ export default async function AwardsAdmin({
         </div>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="card-soft overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[640px]">
             <thead>
@@ -51,7 +51,7 @@ export default async function AwardsAdmin({
                     <Link href={`/admin/awards/${r.id}`} className="font-semibold hover:text-primary-deep hover:underline">{r.title}</Link>
                     <span className="block text-[11.5px] text-ink-faint">{r.awarder}</span>
                   </td>
-                  <td className="px-3 py-2.5"><span className="chip chip-gold !text-[11px]">{r.level}</span></td>
+                  <td className="px-3 py-2.5"><span className="chip chip-accent !text-[11px]">{r.level}</span></td>
                   <td className="px-3 py-2.5 text-ink-muted">{thaiDate(r.award_date) || '—'}</td>
                 </tr>
               ))}

@@ -47,7 +47,7 @@ export default function ItemDetail(p: ItemDetailProps) {
           <div className="min-w-0">
             {p.images.length > 0 && <Gallery images={p.images} title={p.title} />}
 
-            <div className="card p-5 md:p-7 mt-6">
+            <div className="card-soft p-5 md:p-7 mt-6">
               <h2 className="text-[18px] font-extrabold">รายละเอียด<span className="grad-text">เพิ่มเติม</span></h2>
               {p.summary && <p className="mt-3 text-[14.5px] text-ink-soft leading-relaxed">{p.summary}</p>}
               {p.content && <div className="rich mt-4" dangerouslySetInnerHTML={{ __html: p.content }} />}
@@ -73,7 +73,7 @@ export default function ItemDetail(p: ItemDetailProps) {
           </div>
 
           <aside className="flex flex-col gap-5">
-            <div className="card p-5">
+            <div className="card-soft p-5">
               <h2 className="font-extrabold text-[15.5px] mb-2.5">ข้อมูล</h2>
               <dl className="text-[13px]">
                 {p.meta.filter(([, v]) => v).map(([k, v]) => (
@@ -86,7 +86,7 @@ export default function ItemDetail(p: ItemDetailProps) {
             </div>
 
             {p.files.length > 0 && (
-              <div className="card p-5">
+              <div className="card-soft p-5">
                 <h2 className="font-extrabold text-[15.5px] mb-3">
                   ไฟล์แนบ <span className="text-ink-muted font-semibold">({p.files.length})</span>
                 </h2>

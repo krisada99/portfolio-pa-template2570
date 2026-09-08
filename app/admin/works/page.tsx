@@ -42,7 +42,7 @@ export default async function WorksAdmin({
         </div>
       </div>
 
-      <form className="card p-4 flex flex-wrap items-end gap-3">
+      <form className="card-soft p-4 flex flex-wrap items-end gap-3">
         <label className="flex-1 min-w-[240px]">
           <span className="block text-[12.5px] font-bold text-ink-muted mb-1">กรองตามตัวชี้วัด</span>
           <select name="ind" defaultValue={indId || ''}
@@ -54,7 +54,7 @@ export default async function WorksAdmin({
         <button type="submit" className="btn btn-ghost">กรอง</button>
       </form>
 
-      <div className="card overflow-hidden">
+      <div className="card-soft overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[700px]">
             <thead>

@@ -32,7 +32,7 @@ export default async function SetupPage({
     if (done === '1') {
       return (
         <div className="min-h-[80vh] grid place-items-center px-4 py-16">
-          <div className="w-full max-w-[560px] card overflow-hidden">
+          <div className="w-full max-w-[560px] card-soft overflow-hidden">
             <div className="p-7 text-white text-center" style={{ background: 'var(--grad-hero)' }}>
               <div className="text-4xl">🎉</div>
               <h1 className="mt-2 text-[22px] font-extrabold">ติดตั้งเรียบร้อยแล้ว</h1>
@@ -69,7 +69,7 @@ export default async function SetupPage({
   return (
     <div className="min-h-[80vh] px-4 py-12">
       <div className="max-w-[640px] mx-auto">
-        <div className="card overflow-hidden">
+        <div className="card-soft overflow-hidden">
           <div className="p-6 text-white" style={{ background: 'var(--grad-hero)' }}>
             <div className="text-3xl">🚀</div>
             <h1 className="mt-1.5 text-[22px] font-extrabold">ติดตั้งแฟ้มสะสมผลงานครู</h1>

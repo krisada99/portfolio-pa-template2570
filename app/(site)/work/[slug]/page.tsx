@@ -67,7 +67,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
           <div className="min-w-0">
             {images.length > 0 && <Gallery images={images} title={work.title} />}
 
-            <div className="card p-5 md:p-7 mt-6">
+            <div className="card-soft p-5 md:p-7 mt-6">
               <h2 className="text-[18px] md:text-[20px] font-extrabold">
                 รายละเอียด<span className="grad-text">ผลงาน</span>
               </h2>
@@ -96,7 +96,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
           </div>
 
           <aside className="flex flex-col gap-5">
-            <div className="card p-5">
+            <div className="card-soft p-5">
               <h2 className="font-extrabold text-[15.5px] mb-2.5">ข้อมูลผลงาน</h2>
               <dl className="text-[13px]">
                 {[
@@ -114,7 +114,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
             </div>
 
             {files.length > 0 && (
-              <div className="card p-5">
+              <div className="card-soft p-5">
                 <h2 className="font-extrabold text-[15.5px] mb-3">
                   ไฟล์แนบ <span className="text-ink-muted font-semibold">({files.length})</span>
                 </h2>
@@ -141,7 +141,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
             )}
 
             {related.length > 0 && (
-              <div className="card p-5">
+              <div className="card-soft p-5">
                 <h2 className="font-extrabold text-[15.5px] mb-3">ผลงานที่เกี่ยวข้อง</h2>
                 <div className="flex flex-col gap-2.5">
                   {related.map((r) => (

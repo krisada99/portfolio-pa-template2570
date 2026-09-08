@@ -21,7 +21,7 @@ export default async function AboutPage() {
 
       <div className="max-w-[1240px] mx-auto px-4 md:px-10 -mt-8 relative pb-4">
         <div className="grid lg:grid-cols-[.8fr_1.2fr] gap-6 items-start">
-          <div className="card p-5 text-center">
+          <div className="card-soft p-5 text-center">
             <div className="w-[180px] h-[180px] mx-auto rounded-2xl overflow-hidden bg-[color:var(--divider)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -38,12 +38,12 @@ export default async function AboutPage() {
             )}
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {profile?.experience_years ? <span className="chip">🎯 ประสบการณ์ {profile.experience_years} ปี</span> : null}
-              {profile?.teaching_hours ? <span className="chip chip-gold">⏰ สอน {profile.teaching_hours} ชม./สัปดาห์</span> : null}
+              {profile?.teaching_hours ? <span className="chip chip-accent">⏰ สอน {profile.teaching_hours} ชม./สัปดาห์</span> : null}
             </div>
           </div>
 
           <div className="flex flex-col gap-5">
-            <div className="card p-5 md:p-6">
+            <div className="card-soft p-5 md:p-6">
               <h3 className="font-extrabold text-[16px] mb-3">ข้อมูลทั่วไป</h3>
               <dl className="text-[13.5px]">
                 {[
@@ -60,14 +60,14 @@ export default async function AboutPage() {
             </div>
 
             {profile?.philosophy && (
-              <div className="card p-5 md:p-6 grad-soft">
+              <div className="card-soft p-5 md:p-6 grad-soft">
                 <h3 className="font-extrabold text-[16px] mb-1.5">ปรัชญาการสอน</h3>
                 <p className="text-[14px] text-ink-soft leading-relaxed">{profile.philosophy}</p>
               </div>
             )}
 
             {profile?.bio && (
-              <div className="card p-5 md:p-6">
+              <div className="card-soft p-5 md:p-6">
                 <h3 className="font-extrabold text-[16px] mb-2">แนะนำตัว</h3>
                 <div className="rich"><p>{profile.bio}</p></div>
               </div>
@@ -79,7 +79,7 @@ export default async function AboutPage() {
       {educations.length > 0 && (
         <section className="max-w-[1240px] mx-auto px-4 md:px-10 pt-12">
           <SectionHead chip="🎓 การศึกษา" title="วุฒิ" accent="การศึกษา" />
-          <div className="card overflow-hidden">
+          <div className="card-soft overflow-hidden">
             <table className="w-full text-[13.5px]">
               <thead>
                 <tr className="bg-[color:var(--divider)] text-left">
@@ -109,8 +109,8 @@ export default async function AboutPage() {
           <SectionHead chip="💼 เส้นทางวิชาชีพ" title="เส้นทาง" accent="รับราชการ" />
           <div className="flex flex-col gap-3">
             {careers.map((c) => (
-              <div key={c.id} className="card p-4 flex items-center gap-4">
-                <span className="chip chip-gold shrink-0">{c.period}</span>
+              <div key={c.id} className="card-soft p-4 flex items-center gap-4">
+                <span className="chip chip-accent shrink-0">{c.period}</span>
                 <div className="min-w-0">
                   <p className="font-bold text-[14px]">{c.position}</p>
                   <p className="text-[13px] text-ink-muted">{c.school}</p>

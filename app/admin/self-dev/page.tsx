@@ -24,7 +24,7 @@ export default async function SelfDevAdmin({
         </div>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="card-soft overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[700px]">
             <thead>
