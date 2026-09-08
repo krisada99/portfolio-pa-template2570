@@ -123,8 +123,14 @@ export const getRelatedWorks = (indicatorId: number, exceptId: number, limit = 4
 
 /* ---------------- ข้อตกลง PA ---------------- */
 
-export const getAgreements = () =>
-  all<Agreement>('SELECT * FROM pa_agreements WHERE deleted_at IS NULL ORDER BY fiscal_year DESC')
+export const getAgreements = cache(() =>
+  all<Agreement & { detail_count: number; challenge_count: number }>(
+    `SELECT a.*,
+            (SELECT COUNT(*) FROM pa_details pd WHERE pd.agreement_id = a.id)    AS detail_count,
+            (SELECT COUNT(*) FROM pa_challenges pc WHERE pc.agreement_id = a.id) AS challenge_count
+     FROM pa_agreements a
+     WHERE a.deleted_at IS NULL
+     ORDER BY a.fiscal_year DESC`))
 
 export const getAgreement = (fiscalYear: number) =>
   one<Agreement>('SELECT * FROM pa_agreements WHERE fiscal_year = ? AND deleted_at IS NULL', [fiscalYear])
@@ -136,8 +142,12 @@ export const getPaDetails = (agreementId: number) =>
                  JOIN domains d ON d.id = i.domain_id
                  WHERE p.agreement_id = ? ORDER BY d.code, i.sort_order`, [agreementId])
 
+/** ประเด็นท้าทายทั้งหมดของข้อตกลงปีนั้น — 1 ปีมีได้หลายข้อ */
+export const getPaChallenges = (agreementId: number) =>
+  all<PaChallenge>('SELECT * FROM pa_challenges WHERE agreement_id = ? ORDER BY id', [agreementId])
+
 export const getPaChallenge = (agreementId: number) =>
-  one<PaChallenge>('SELECT * FROM pa_challenges WHERE agreement_id = ?', [agreementId])
+  one<PaChallenge>('SELECT * FROM pa_challenges WHERE agreement_id = ? ORDER BY id', [agreementId])
 
 /* ---------------- การพัฒนาตนเอง / รางวัล ---------------- */
 
@@ -186,3 +196,37 @@ export const getStats = cache(async () => {
     awards: Number(r?.awards ?? 0),
   }
 })
+
+
+/* ---------------- ภาพรวมตัวชี้วัดของข้อตกลงปีหนึ่ง ---------------- */
+
+export interface IndicatorOverview extends Indicator {
+  work_count: number
+  pa: PaDetail | null
+}
+
+/**
+ * 15 ตัวชี้วัด พร้อมข้อตกลงของปีนั้นและจำนวนผลงานของแต่ละตัว จัดกลุ่มตามด้าน
+ * ใช้ในหน้าข้อตกลง PA (ตอนที่ 2) — ตรงกับ Repository::indicatorOverviewGrouped ของเว็บ PHP
+ */
+export async function getIndicatorOverviewGrouped(
+  agreementId: number,
+): Promise<Map<number, IndicatorOverview[]>> {
+  const [indicators, counts, details] = await Promise.all([
+    getIndicators(),
+    getWorkCountByIndicator(),
+    getPaDetails(agreementId),
+  ])
+  const paByInd = new Map(details.map((d) => [Number(d.indicator_id), d]))
+
+  const grouped = new Map<number, IndicatorOverview[]>([[1, []], [2, []], [3, []]])
+  for (const ind of indicators) {
+    const code = Number(ind.domain_code)
+    grouped.get(code)?.push({
+      ...ind,
+      work_count: counts.get(ind.id) ?? 0,
+      pa: paByInd.get(ind.id) ?? null,
+    })
+  }
+  return grouped
+}

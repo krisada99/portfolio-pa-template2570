@@ -50,6 +50,7 @@ export interface Agreement {
   evaluation_score: number | null; evaluation_result: string | null
   pdf_source: MediaSource | null; pdf_ref: string | null; pdf_name: string | null
   note: string
+  updated_at?: string
 }
 
 export interface PaDetail {
