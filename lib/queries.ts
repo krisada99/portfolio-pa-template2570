@@ -456,3 +456,82 @@ export const getSelfDevCountByYear = async (fiscalYear: number): Promise<number>
   Number(await scalar<number>(
     'SELECT COUNT(*) FROM self_developments WHERE deleted_at IS NULL AND fiscal_year = ?',
     [fiscalYear]) ?? 0)
+
+
+/* ---------------- ตัวเลขสำหรับแดชบอร์ดหลังบ้าน ---------------- */
+
+export interface AdminStats extends HomeStats {
+  /** รหัสตัวชี้วัดที่ยังไม่มีผลงาน */
+  missing: string[]
+  fiscal_year: number
+}
+
+/**
+ * สถิติสำหรับหลังบ้าน — ตรงกับ Repository::stats() ของเว็บ PHP
+ * includeDraft = true จะนับฉบับร่างด้วย (PHP เรียกทั้งสองแบบในหน้าแดชบอร์ด)
+ */
+export const getAdminStats = cache(async (includeDraft = false): Promise<AdminStats> => {
+  const pubOnly = !includeDraft
+  const statusCond = pubOnly ? " AND status='published'" : ''
+  const wStatus = pubOnly ? " AND w.status='published'" : ''
+
+  const [indicators, countRows, byDomain, totals, latestFy] = await Promise.all([
+    getIndicators(),
+    all<{ indicator_id: number; n: number }>(
+      `SELECT indicator_id, COUNT(*) AS n FROM works
+       WHERE deleted_at IS NULL${statusCond} GROUP BY indicator_id`),
+    all<{ code: number; n: number }>(
+      `SELECT d.code AS code, COUNT(w.id) AS n
+       FROM domains d
+       JOIN indicators i ON i.domain_id = d.id
+       LEFT JOIN works w ON w.indicator_id = i.id AND w.deleted_at IS NULL${wStatus}
+       GROUP BY d.code`),
+    one<{ works: number; hours: number; awards: number }>(`
+      SELECT
+        (SELECT COUNT(*) FROM works WHERE deleted_at IS NULL${statusCond}) AS works,
+        (SELECT COALESCE(SUM(hours),0) FROM self_developments WHERE deleted_at IS NULL) AS hours,
+        (SELECT COUNT(*) FROM awards WHERE deleted_at IS NULL) AS awards`),
+    scalar<number>('SELECT fiscal_year FROM pa_agreements WHERE deleted_at IS NULL ORDER BY fiscal_year DESC LIMIT 1'),
+  ])
+
+  const counts = new Map(countRows.map((r) => [Number(r.indicator_id), Number(r.n)]))
+  const filled = new Map<number, number>([[1, 0], [2, 0], [3, 0]])
+  const totalPerDomain = new Map<number, number>([[1, 0], [2, 0], [3, 0]])
+  const missing: string[] = []
+  for (const ind of indicators) {
+    const dc = Number(ind.domain_code)
+    totalPerDomain.set(dc, (totalPerDomain.get(dc) ?? 0) + 1)
+    if ((counts.get(ind.id) ?? 0) > 0) filled.set(dc, (filled.get(dc) ?? 0) + 1)
+    else missing.push(ind.code)
+  }
+
+  return {
+    total_works: Number(totals?.works ?? 0),
+    works_by_domain: new Map(byDomain.map((r) => [Number(r.code), Number(r.n)])),
+    filled,
+    total_per_domain: totalPerDomain,
+    filled_total: [...filled.values()].reduce((a, b) => a + b, 0),
+    indicator_total: indicators.length,
+    self_dev_hours: Number(totals?.hours ?? 0),
+    awards: Number(totals?.awards ?? 0),
+    missing,
+    fiscal_year: Number(latestFy ?? new Date().getFullYear() + 544),
+  }
+})
+
+/** จำนวนผลงานที่เพิ่มในเดือนนี้ */
+export const getWorksAddedThisMonth = async (): Promise<number> => {
+  const first = new Date()
+  const from = `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, '0')}-01 00:00:00`
+  return Number(await scalar<number>(
+    'SELECT COUNT(*) FROM works WHERE deleted_at IS NULL AND created_at >= ?', [from]) ?? 0)
+}
+
+/** ผลงานล่าสุดรวมฉบับร่าง (ใช้ในแดชบอร์ดหลังบ้าน) */
+export const getRecentWorksIncludingDraft = (limit = 6) =>
+  all<Work>(`SELECT w.*, i.code AS indicator_code, i.name AS indicator_name, d.code AS domain_code
+             FROM works w
+             JOIN indicators i ON i.id = w.indicator_id
+             JOIN domains d ON d.id = i.domain_id
+             WHERE w.deleted_at IS NULL
+             ORDER BY w.work_date DESC, w.id DESC LIMIT ?`, [limit])
