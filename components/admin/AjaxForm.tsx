@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useFormStatus } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { toastSuccess, toastError } from '@/lib/ui'
@@ -10,16 +10,19 @@ import { toastSuccess, toastError } from '@/lib/ui'
  * action คือ server action ที่คืน { ok } กลับมา
  */
 export default function AjaxForm({
-  action, successMsg, className, children,
+  action, successMsg, className, resetOnSuccess, children,
 }: {
   action: (f: FormData) => Promise<{ ok: boolean; error?: string }>
   successMsg: string
   className?: string
+  /** ล้างค่าในฟอร์มหลังบันทึกสำเร็จ — ใช้กับฟอร์มที่กรอกใหม่ทุกครั้ง เช่น เปลี่ยนรหัสผ่าน */
+  resetOnSuccess?: boolean
   children: React.ReactNode
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [err, setErr] = useState('')
+  const box = useRef<HTMLFormElement>(null)
 
   return (
     <form autoComplete="off" className={className} action={async (f) => {
@@ -27,8 +30,9 @@ export default function AjaxForm({
       if (!r.ok) { setErr(r.error ?? ''); toastError(r.error || 'บันทึกไม่สำเร็จ'); return }
       setErr('')
       toastSuccess(successMsg)
+      if (resetOnSuccess) box.current?.reset()
       startTransition(() => router.refresh())
-    }}>
+    }} ref={box}>
       {children}
       {err && <p className="text-[12px] text-coral-deep mt-3">{err}</p>}
     </form>

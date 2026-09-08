@@ -1,123 +1,196 @@
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { requireAdmin, logAction, hashPassword, verifyPassword } from '@/lib/auth'
-import { db, one, now } from '@/lib/db'
+import { requireAdmin } from '@/lib/auth'
+import { all, one } from '@/lib/db'
 import { getSetting } from '@/lib/queries'
-import { str, pick } from '@/lib/form'
-import { Card, Field, inputClass } from '@/components/admin/Field'
-import SavedFlag from '@/components/admin/SavedFlag'
-import { VALID_THEMES } from '@/lib/theme'
+import { isSiteTheme, thaiDate, excerpt } from '@/lib/theme'
+import PageHead from '@/components/admin/PageHead'
+import AjaxForm, { SubmitButton } from '@/components/admin/AjaxForm'
+import ThemePicker, { type ThemeOption } from '@/components/admin/ThemePicker'
+import { changePassword } from './actions'
 
-const THEME_LABEL: Record<string, { name: string; c1: string; c2: string }> = {
-  royal: { name: 'น้ำเงิน (Royal Blue)', c1: '#1E3A8A', c2: '#0EA5E9' },
-  emerald: { name: 'เขียวมรกต (Emerald)', c1: '#074F38', c2: '#12A06F' },
-  maroon: { name: 'แดงเลือดหมู (Maroon)', c1: '#6B1430', c2: '#C0355F' },
+/**
+ * 3 ธีมสี — สี ชื่อ และคำอธิบายยกมาจาก admin/settings.php ทั้งหมด
+ * (คีย์ของ PHP คือ pink | mint | lavender เวอร์ชันนี้ใช้ emerald | royal | maroon)
+ */
+const THEMES: ThemeOption[] = [
+  { key: 'emerald', name: 'Emerald & Gold', desc: 'เขียวมรกต–ทอง สุขุม น่าเชื่อถือ (ค่าเริ่มต้น)',
+    c1: '#0B6E4F', c2: '#12A06F', bg: '#F5FBF8', soft: '#E1F4EC' },
+  { key: 'royal', name: 'Royal Blue', desc: 'น้ำเงินสด–ฟ้า สะอาดตา ดูกระฉับกระเฉง',
+    c1: '#1D4ED8', c2: '#0EA5E9', bg: '#F5F8FD', soft: '#E6EEFF' },
+  { key: 'maroon', name: 'Maroon & Gold', desc: 'แดงเลือดหมู–ทอง ขรึม ดูเป็นทางการ',
+    c1: '#8C1D3F', c2: '#C0355F', bg: '#FDF7F9', soft: '#FAE7ED' },
+]
+
+/** สี chip ตามชนิดการกระทำ (ตกแต่งอย่างเดียว) */
+function actionChip(action: string): string {
+  if (action.startsWith('เพิ่ม')) return 'chip-2'
+  if (action.startsWith('ลบ')) return 'chip-1'
+  if (action.startsWith('แก้ไข') || action.startsWith('อัปเดต') || action.startsWith('บันทึก')) return 'chip-accent'
+  if (action.startsWith('เข้าสู่ระบบ')) return 'chip-3'
+  if (action.startsWith('ออกจากระบบ')) return 'chip-ink'
+  if (action.startsWith('เปลี่ยนรหัสผ่าน')) return 'chip-grad'
+  return 'chip-primary'
 }
 
-export default async function SettingsAdmin({
-  searchParams,
-}: { searchParams: Promise<{ saved?: string; error?: string }> }) {
+interface LogRow {
+  id: number; action: string; table_name: string; detail: string; ip: string; created_at: string
+}
+
+/** วันที่ไทยแบบเต็ม — ตรงกับ thai_date_full() ของเว็บ PHP */
+function thaiToday(): string {
+  const d = new Date()
+  const day = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'][d.getDay()]
+  const month = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                 'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'][d.getMonth()]
+  return `วัน${day}ที่ ${d.getDate()} ${month} ${d.getFullYear() + 543}`
+}
+
+const th = (n: unknown) => Number(n ?? 0).toLocaleString('th-TH')
+
+/** ตั้งค่าระบบ — แปลงจาก admin/settings.php */
+export default async function SettingsAdmin() {
   await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
-  const { saved, error } = await searchParams
-  const theme = (await getSetting('theme')) ?? 'royal'
 
-  async function saveTheme(f: FormData) {
-    'use server'
-    await requireAdmin()
-    const v = pick(f, 'theme', VALID_THEMES, 'royal')
-    await db.execute({
-      sql: `INSERT INTO site_settings (key, value, updated_at) VALUES ('theme', ?, ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-      args: [v, now()],
-    })
-    await logAction('เปลี่ยนธีมสี', 'site_settings', 0, v)
-    revalidatePath('/', 'layout')
-    redirect('/admin/settings?saved=theme')
-  }
+  const [themeRaw, user, logs, totals] = await Promise.all([
+    getSetting('theme'),
+    one<{ username: string }>('SELECT username FROM users ORDER BY id LIMIT 1'),
+    all<LogRow>('SELECT * FROM activity_log ORDER BY id DESC LIMIT 40'),
+    one<{ works: number; images: number; views: number }>(`
+      SELECT
+        (SELECT COUNT(*) FROM works WHERE deleted_at IS NULL) AS works,
+        (SELECT COUNT(*) FROM work_images) + (SELECT COUNT(*) FROM item_images) AS images,
+        (SELECT COALESCE(SUM(view_count),0) FROM works WHERE deleted_at IS NULL) AS views`),
+  ])
+  const theme = isSiteTheme(themeRaw) ? themeRaw : 'royal'
 
-  async function changePassword(f: FormData) {
-    'use server'
-    const session = await requireAdmin()
-    const current = str(f, 'current', 200)
-    const next = str(f, 'next', 200)
-    const confirm = str(f, 'confirm', 200)
-
-    if (next.length < 8) redirect('/admin/settings?error=' + encodeURIComponent('รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัวอักษร'))
-    if (next !== confirm) redirect('/admin/settings?error=' + encodeURIComponent('รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน'))
-
-    const user = await one<{ password_hash: string }>(
-      'SELECT password_hash FROM users WHERE id = ?', [session.uid])
-    if (!user || !(await verifyPassword(current, user.password_hash))) {
-      redirect('/admin/settings?error=' + encodeURIComponent('รหัสผ่านปัจจุบันไม่ถูกต้อง'))
-    }
-
-    await db.execute({
-      sql: 'UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?',
-      args: [await hashPassword(next), now(), session.uid],
-    })
-    await logAction('เปลี่ยนรหัสผ่าน', 'users', session.uid)
-    redirect('/admin/settings?saved=password')
-  }
+  const dbUrl = process.env.TURSO_DATABASE_URL ?? ''
+  const info: [string, string][] = [
+    ['Node.js', process.version],
+    ['ฐานข้อมูล', dbUrl.startsWith('file:') ? 'SQLite (ไฟล์บนเครื่อง)' : 'Turso (libSQL) บนคลาวด์'],
+    ['ที่เก็บรูปและไฟล์', 'Google Drive (ลิงก์แชร์)'],
+    ['โหมดการทำงาน', process.env.NODE_ENV === 'production' ? 'ใช้งานจริง (production)' : 'กำลังพัฒนา (development)'],
+    ['ผลงานทั้งหมด', `${th(totals?.works)} ชิ้น`],
+    ['รูปภาพทั้งหมด', `${th(totals?.images)} รูป`],
+    ['ยอดเข้าชมรวม', `${th(totals?.views)} ครั้ง`],
+    ['เขตเวลา', `${Intl.DateTimeFormat().resolvedOptions().timeZone} (${thaiToday()})`],
+  ]
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[22px] font-extrabold">ตั้งค่า</h1>
-          <p className="text-[13px] text-ink-muted">ธีมสีของเว็บและรหัสผ่านผู้ดูแล</p>
-        </div>
-        <SavedFlag show={!!saved} />
+    <>
+      <PageHead title="ตั้งค่าระบบ ⚙️" sub="บัญชีผู้ดูแล · ข้อมูลระบบ · บันทึกการใช้งาน" />
+
+      {/* ================= ธีมสีของเว็บไซต์ ================= */}
+      <section className="mt-5 bg-white rounded-[1.6rem] p-6 shadow-soft border border-[color:var(--border)]">
+        <ThemePicker themes={THEMES} current={theme} />
+      </section>
+
+      <div className="mt-4 grid lg:grid-cols-2 gap-4">
+
+        {/* ================= เปลี่ยนรหัสผ่าน ================= */}
+        <section className="bg-white rounded-[1.6rem] p-6 shadow-soft border border-[color:var(--border)]">
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-coral-soft grid place-items-center text-xl shrink-0">🔐</span>
+            <div>
+              <h2 className="font-bold text-[16px]">เปลี่ยนรหัสผ่าน</h2>
+              <p className="text-[12px] text-ink-muted mt-0.5">
+                บัญชี: <b className="text-ink">{user?.username ?? '—'}</b> · เข้ารหัสด้วย BCRYPT
+              </p>
+            </div>
+          </div>
+
+          <AjaxForm action={changePassword} successMsg="เปลี่ยนรหัสผ่านเรียบร้อยแล้ว" resetOnSuccess className="mt-5">
+            <div className="mb-4">
+              <label className="lbl req" htmlFor="cur">รหัสผ่านปัจจุบัน</label>
+              <input className="inp" id="cur" name="current_password" type="password" required autoComplete="current-password" />
+              <span className="field-error"></span>
+            </div>
+            <div className="mb-4">
+              <label className="lbl req" htmlFor="np">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)</label>
+              <input className="inp" id="np" name="new_password" type="password" required minLength={8} autoComplete="new-password" />
+              <span className="field-error"></span>
+            </div>
+            <div className="mb-4">
+              <label className="lbl req" htmlFor="cp">ยืนยันรหัสผ่านใหม่</label>
+              <input className="inp" id="cp" name="confirm_password" type="password" required minLength={8} autoComplete="new-password" />
+              <span className="field-error"></span>
+            </div>
+
+            <p className="mb-4 rounded-2xl bg-primary-soft text-primary-deep px-3.5 py-2.5 text-[12px] leading-relaxed">
+              💡 แนะนำให้ผสมตัวอักษรใหญ่-เล็ก ตัวเลข และสัญลักษณ์ เพื่อความปลอดภัยของแฟ้มผลงาน
+            </p>
+            <SubmitButton className="btn btn-primary w-full">💾 เปลี่ยนรหัสผ่าน</SubmitButton>
+          </AjaxForm>
+
+          <div className="mt-5 pt-4 border-t border-dashed border-primary-line/60">
+            <p className="text-[12px] text-ink-muted leading-relaxed">
+              🔑 ถ้าลืมรหัสผ่าน ให้รันคำสั่งนี้ในเครื่องที่มีโค้ดของเว็บ
+              {' '}(ต้องตั้ง <code className="rounded bg-[color:var(--divider)] px-1.5 py-0.5 text-[11.5px]">TURSO_DATABASE_URL</code> ให้ตรงกับฐานข้อมูลจริง)
+            </p>
+            <pre className="mt-2 p-3 rounded-xl bg-[color:var(--divider)] text-[12px] overflow-x-auto">node scripts/create-admin.mjs admin รหัสผ่านใหม่ &quot;ชื่อ-สกุล&quot;</pre>
+          </div>
+        </section>
+
+        {/* ================= ข้อมูลระบบ ================= */}
+        <section className="bg-white rounded-[1.6rem] p-6 shadow-soft border border-[color:var(--border)]">
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-mint-soft grid place-items-center text-xl shrink-0">🩺</span>
+            <div>
+              <h2 className="font-bold text-[16px]">ข้อมูลระบบ</h2>
+              <p className="text-[12px] text-ink-muted mt-0.5">สถานะเซิร์ฟเวอร์และตัวเลขสรุปของแฟ้ม</p>
+            </div>
+          </div>
+
+          <dl className="mt-5 text-[13px] flex flex-col">
+            {info.map(([k, v]) => (
+              <div key={k} className="flex justify-between items-start gap-3 py-2.5 border-b border-dashed border-primary-line/60 last:border-0 hover:bg-primary-soft/40 rounded-lg px-2 -mx-2 transition">
+                <dt className="text-ink-muted">{k}</dt>
+                <dd className="font-bold text-right text-ink">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
       </div>
 
-      {error && (
-        <p className="rounded-xl px-4 py-2.5 text-[13px] font-semibold bg-[#FDECEC] text-[#B3261E] border border-[#F5C2C0]">{error}</p>
-      )}
-
-      <form action={saveTheme}>
-        <Card title="ธีมสีของเว็บ">
-          <div className="grid sm:grid-cols-3 gap-4">
-            {VALID_THEMES.map((t) => {
-              const info = THEME_LABEL[t]!
-              return (
-                <label key={t} className="cursor-pointer">
-                  <input type="radio" name="theme" value={t} defaultChecked={theme === t} className="peer sr-only" />
-                  <span className="block rounded-2xl border-2 border-[color:var(--border)] overflow-hidden
-                                   peer-checked:border-[color:var(--primary)] transition">
-                    <span className="block h-16" style={{ background: `linear-gradient(135deg,${info.c1},${info.c2})` }} />
-                    <span className="block px-3.5 py-2.5 text-[13px] font-bold bg-white">{info.name}</span>
-                  </span>
-                </label>
-              )
-            })}
+      {/* ================= บันทึกการใช้งาน ================= */}
+      <section className="mt-4 bg-white rounded-[1.6rem] p-6 shadow-soft border border-[color:var(--border)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-sunny-soft grid place-items-center text-xl shrink-0">📜</span>
+            <div>
+              <h2 className="font-bold text-[16px]">บันทึกการใช้งานล่าสุด</h2>
+              <p className="text-[12px] text-ink-muted mt-0.5">แสดง 40 รายการล่าสุด</p>
+            </div>
           </div>
-          <button type="submit" className="btn btn-primary mt-4">บันทึกธีม</button>
-        </Card>
-      </form>
+          <span className="chip chip-primary">{logs.length} รายการ</span>
+        </div>
 
-      <form action={changePassword}>
-        <Card title="เปลี่ยนรหัสผ่าน">
-          <div className="grid md:grid-cols-3 gap-4">
-            <Field label="รหัสผ่านปัจจุบัน" required>
-              <input name="current" type="password" required autoComplete="current-password" className={inputClass} />
-            </Field>
-            <Field label="รหัสผ่านใหม่" required hint="อย่างน้อย 8 ตัวอักษร">
-              <input name="next" type="password" required minLength={8} autoComplete="new-password" className={inputClass} />
-            </Field>
-            <Field label="ยืนยันรหัสผ่านใหม่" required>
-              <input name="confirm" type="password" required minLength={8} autoComplete="new-password" className={inputClass} />
-            </Field>
+        {logs.length > 0 ? (
+          <div className="overflow-x-auto mt-4">
+            <table className="adm-table min-w-[640px] md:min-w-0">
+              <thead><tr><th className="col-no">#</th><th>เวลา</th><th>การกระทำ</th><th>ตาราง</th><th>รายละเอียด</th><th>IP</th></tr></thead>
+              <tbody>
+                {logs.map((l, i) => (
+                  <tr key={l.id}>
+                    <td className="col-no" data-label="ลำดับ">{i + 1}</td>
+                    <td data-label="เวลา" className="whitespace-nowrap text-ink-soft">
+                      {thaiDate(String(l.created_at).slice(0, 10))}{' '}
+                      <span className="text-ink-faint">{String(l.created_at).slice(11, 16)}</span>
+                    </td>
+                    <td data-label="การกระทำ"><span className={`chip ${actionChip(l.action)}`}>{l.action}</span></td>
+                    <td data-label="ตาราง" className="text-ink-muted"><code className="text-[12px]">{l.table_name}</code></td>
+                    <td data-label="รายละเอียด">{excerpt(l.detail, 60) || '—'}</td>
+                    <td data-label="IP" className="text-ink-faint text-[12px]">{l.ip}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <button type="submit" className="btn btn-primary mt-4">เปลี่ยนรหัสผ่าน</button>
-        </Card>
-      </form>
-
-      <Card title="ถ้าลืมรหัสผ่าน">
-        <p className="text-[13.5px] text-ink-soft leading-relaxed">
-          รันคำสั่งนี้ในเครื่องที่มีโค้ดของเว็บ (ต้องตั้งค่า <code className="px-1.5 py-0.5 rounded bg-[color:var(--divider)] text-[12px]">TURSO_DATABASE_URL</code> ให้ตรงกับฐานข้อมูลจริง)
-        </p>
-        <pre className="mt-2.5 p-3.5 rounded-xl bg-[color:var(--divider)] text-[12.5px] overflow-x-auto">
-node scripts/create-admin.mjs admin รหัสผ่านใหม่ &quot;ชื่อ-สกุล&quot;</pre>
-      </Card>
-    </div>
+        ) : (
+          <div className="text-center py-10">
+            <div className="text-5xl float">📜</div>
+            <p className="mt-3 text-[13px] text-ink-muted">ยังไม่มีบันทึกการใช้งาน</p>
+          </div>
+        )}
+      </section>
+    </>
   )
 }
