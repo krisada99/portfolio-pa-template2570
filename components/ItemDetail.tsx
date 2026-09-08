@@ -1,108 +1,184 @@
 import Link from 'next/link'
-import Gallery, { type GalleryItem } from '@/components/Gallery'
+import WorkGallery, { type GalleryImage } from '@/components/WorkGallery'
+import ShareBar from '@/components/ShareBar'
 import { fileUrl } from '@/lib/media'
+import { fileIcon, humanSize, youtubeId, excerpt } from '@/lib/theme'
 import type { ItemFile } from '@/lib/types'
 
-export interface ItemDetailProps {
-  backHref: string
-  backLabel: string
-  chip: string
-  title: string
-  meta: [string, string][]
-  summary?: string
-  content?: string | null
-  note?: string
-  videoUrl?: string
-  linkUrl?: string
-  linkLabel?: string
-  images: GalleryItem[]
-  files: ItemFile[]
-  gradient: string
-}
+/**
+ * โครงหน้ารายละเอียดของ "รางวัล" และ "การพัฒนาตนเอง"
+ * แปลงมาจาก award.php / training.php ซึ่งใช้โครงเดียวกัน ต่างแค่ข้อความและช่องข้อมูล
+ */
 
-function youtubeId(url: string): string | null {
-  const m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/)
-  return m?.[1] ?? null
+export interface NeighborLink { href: string; label: string; title: string; meta: string }
+
+export interface ItemDetailProps {
+  /* HERO */
+  watermark: string
+  breadcrumb: { href: string; label: string }[]
+  eyebrow: string
+  title: string
+  heroChips: React.ReactNode
+  heroMeta: React.ReactNode
+  /* เนื้อหา */
+  bodyIcon: string
+  bodyHeading: React.ReactNode
+  emptyContentText: string
+  summary: string
+  content: string | null
+  note: string
+  videoUrl: string
+  linkUrl: string
+  linkLabel: string
+  /* แถบข้าง */
+  infoIconBg: string
+  infoHeading: string
+  info: [string, React.ReactNode][]
+  extraAside?: React.ReactNode
+  /* อื่น ๆ */
+  images: GalleryImage[]
+  files: ItemFile[]
+  prev: NeighborLink | null
+  next: NeighborLink | null
+  footerHref: string
+  footerLabel: string
 }
 
 export default function ItemDetail(p: ItemDetailProps) {
-  const yt = p.videoUrl ? youtubeId(p.videoUrl) : null
+  const ytId = youtubeId(p.videoUrl)
+
   return (
-    <>
-      <section className="relative overflow-hidden text-white" style={{ background: p.gradient }}>
-        <div className="absolute inset-0 dots opacity-25" />
-        <div className="relative max-w-[1240px] mx-auto px-4 md:px-10 py-10 md:py-12">
-          <nav className="text-[12px] text-white/75 mb-3">
-            <Link href="/" className="hover:underline">หน้าแรก</Link>
-            <span className="mx-1.5">/</span>
-            <Link href={p.backHref} className="hover:underline">{p.backLabel}</Link>
+    <main>
+      {/* ================= HERO ================= */}
+      <section className="relative overflow-hidden grad-hero text-white">
+        <div className="absolute inset-0 dots opacity-20" />
+        <div className="blob w-[360px] h-[360px] !opacity-40 bg-white -right-24 -top-16" />
+        <div className="blob w-[240px] h-[240px] !opacity-25 bg-white -left-20 -bottom-28 hidden md:block" />
+        <span className="absolute -right-2 -bottom-10 text-[200px] md:text-[280px] font-extrabold leading-none text-white/10 select-none pointer-events-none" aria-hidden="true">{p.watermark}</span>
+
+        <div className="relative max-w-[1240px] mx-auto px-4 md:px-10 pt-8 md:pt-12 pb-10 md:pb-14">
+          <nav className="flex flex-wrap items-center gap-1.5 text-[11.5px]" aria-label="breadcrumb">
+            {p.breadcrumb.map((b, i) => (
+              <span key={b.href} className="contents">
+                <Link href={b.href} className="chip chip-glass !text-ink !text-[11px] hover:!bg-white transition">{b.label}</Link>
+                <span className={`text-white/70${i === p.breadcrumb.length - 1 ? ' hidden sm:inline' : ''}`} aria-hidden="true">›</span>
+              </span>
+            ))}
+            <b className="hidden sm:inline text-white/90 font-semibold truncate max-w-[260px]">{excerpt(p.title, 40)}</b>
           </nav>
-          <span className="chip chip-glass">{p.chip}</span>
-          <h1 className="mt-3 text-[24px] md:text-[34px] font-extrabold leading-tight">{p.title}</h1>
+
+          <div className="mt-6 grid lg:grid-cols-[1fr_auto] gap-6 items-end">
+            <div className="min-w-0">
+              <div className="flex flex-wrap gap-2">{p.heroChips}</div>
+              <p className="mt-5 text-[12px] font-bold tracking-[.14em] uppercase text-white/85">{p.eyebrow}</p>
+              <h1 className="mt-1.5 text-[24px] md:text-[34px] font-extrabold leading-tight tracking-tight drop-shadow-sm">{p.title}</h1>
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] font-medium text-white/90">{p.heroMeta}</div>
+            </div>
+            <ShareBar />
+          </div>
         </div>
       </section>
 
-      <div className="max-w-[1240px] mx-auto px-4 md:px-10 -mt-6 md:-mt-8 pb-12 relative z-10">
+      {/* ================= เนื้อหา ================= */}
+      <section className="max-w-[1240px] mx-auto px-4 md:px-10 -mt-6 md:-mt-8 pb-12 relative z-10">
         <div className="grid lg:grid-cols-[1.65fr_.85fr] gap-6 lg:gap-7 items-start">
-          <div className="min-w-0">
-            {p.images.length > 0 && <Gallery images={p.images} title={p.title} />}
 
-            <div className="card-soft p-5 md:p-7 mt-6">
-              <h2 className="text-[18px] font-extrabold">รายละเอียด<span className="grad-text">เพิ่มเติม</span></h2>
-              {p.summary && <p className="mt-3 text-[14.5px] text-ink-soft leading-relaxed">{p.summary}</p>}
-              {p.content && <div className="rich mt-4" dangerouslySetInnerHTML={{ __html: p.content }} />}
-              {p.note && !p.content && <p className="mt-3 text-[14px] text-ink-soft leading-relaxed">{p.note}</p>}
-              {!p.summary && !p.content && !p.note && (
-                <p className="mt-3 text-[14px] text-ink-faint">ยังไม่ได้กรอกรายละเอียด</p>
+          {/* ================= คอลัมน์ซ้าย ================= */}
+          <div className="min-w-0">
+            {p.images.length > 0 && <WorkGallery images={p.images} title={p.title} />}
+
+            <article className={`${p.images.length > 0 ? 'mt-7 ' : ''}card-soft rounded-[2rem] p-6 md:p-9`}>
+              <div className="flex items-center gap-2.5 mb-5">
+                <span className="w-10 h-10 rounded-2xl grad-bg grid place-items-center text-lg text-white shrink-0">{p.bodyIcon}</span>
+                <h2 className="font-extrabold text-[18px] md:text-[20px] leading-tight">{p.bodyHeading}</h2>
+              </div>
+
+              {p.summary && (
+                <p className="text-[14.5px] leading-loose text-ink-soft font-medium mb-6 pb-6 border-b border-dashed border-[color:var(--border)] relative pl-4">
+                  <span className="absolute left-0 top-1 bottom-7 w-1 rounded-full grad-bg" aria-hidden="true" />
+                  {p.summary}
+                </p>
               )}
 
-              {yt && (
-                <div className="mt-5 rounded-[1.2rem] overflow-hidden bg-black aspect-video">
-                  <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${yt}`}
-                    title={p.title} allowFullScreen
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
+              <div className="rich">
+                {!p.content
+                  ? <p className="text-ink-muted">{p.emptyContentText}</p>
+                  : p.content.includes('<')
+                    ? <span dangerouslySetInnerHTML={{ __html: p.content }} />
+                    : <p className="whitespace-pre-line">{p.content}</p>}
+              </div>
+
+              {p.note && (
+                <div className="mt-7 rounded-[1.4rem] border-2 border-dashed border-[color:var(--border)] bg-primary-soft/40 p-5">
+                  <p className="text-[11.5px] font-extrabold tracking-[.1em] uppercase text-primary-deep mb-1.5">📝 หมายเหตุ</p>
+                  <p className="text-[13px] leading-relaxed text-ink-soft whitespace-pre-line">{p.note}</p>
                 </div>
               )}
 
+              {ytId ? (
+                <div className="mt-7">
+                  <div className="flex items-center gap-2 mb-3"><span className="chip chip-1">▶️ วิดีโอประกอบ</span></div>
+                  <div className="rounded-[1.6rem] overflow-hidden aspect-video bg-ink shadow-soft">
+                    <iframe className="w-full h-full" src={`https://www.youtube-nocookie.com/embed/${ytId}`}
+                      title={`วิดีโอประกอบ ${p.title}`} loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen />
+                  </div>
+                </div>
+              ) : p.videoUrl ? (
+                <div className="mt-7">
+                  <a href={p.videoUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">▶️ เปิดวิดีโอประกอบ</a>
+                </div>
+              ) : null}
+
               {p.linkUrl && (
-                <a href={p.linkUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost mt-5">
-                  🔗 {p.linkLabel || 'เปิดลิงก์ที่เกี่ยวข้อง'}
-                </a>
+                <div className="mt-5 pt-5 border-t border-[color:var(--divider)]">
+                  <a href={p.linkUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+                    🔗 {p.linkLabel || 'เปิดลิงก์ที่เกี่ยวข้อง'}
+                  </a>
+                </div>
               )}
-            </div>
+            </article>
           </div>
 
-          <aside className="flex flex-col gap-5">
-            <div className="card-soft p-5">
-              <h2 className="font-extrabold text-[15.5px] mb-2.5">ข้อมูล</h2>
-              <dl className="text-[13px]">
-                {p.meta.filter(([, v]) => v).map(([k, v]) => (
-                  <div key={k} className="flex gap-3 py-2 border-b border-[color:var(--divider)] last:border-0">
-                    <dt className="w-[92px] shrink-0 text-ink-muted">{k}</dt>
-                    <dd className="font-semibold flex-1 text-right">{v}</dd>
+          {/* ================= คอลัมน์ขวา ================= */}
+          <aside className="min-w-0 flex flex-col gap-4">
+            {p.extraAside}
+
+            <div className="card-soft rounded-[1.8rem] p-5 md:p-6">
+              <div className="flex items-center gap-2.5 mb-4">
+                <span className={`w-9 h-9 rounded-xl ${p.infoIconBg} grid place-items-center text-base shrink-0`}>📌</span>
+                <h2 className="font-extrabold text-[15.5px]">{p.infoHeading}</h2>
+              </div>
+              <dl className="flex flex-col divide-y divide-[color:var(--divider)] text-[12.5px]">
+                {p.info.map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3 py-2.5">
+                    <dt className="text-ink-muted shrink-0">{k}</dt>
+                    <dd className="font-bold text-right">{v}</dd>
                   </div>
                 ))}
               </dl>
             </div>
 
             {p.files.length > 0 && (
-              <div className="card-soft p-5">
-                <h2 className="font-extrabold text-[15.5px] mb-3">
-                  ไฟล์แนบ <span className="text-ink-muted font-semibold">({p.files.length})</span>
-                </h2>
-                <div className="flex flex-col gap-2">
+              <div className="card-soft rounded-[1.8rem] p-5 md:p-6">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <span className="w-9 h-9 rounded-xl bg-sunny-soft grid place-items-center text-base shrink-0">📎</span>
+                  <h2 className="font-extrabold text-[15.5px]">ไฟล์แนบ <span className="text-ink-muted font-semibold">({p.files.length})</span></h2>
+                </div>
+                <div className="flex flex-col gap-2.5">
                   {p.files.map((f) => (
                     <a key={f.id} href={fileUrl(f) ?? '#'} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-2.5 rounded-xl border border-[color:var(--border)] hover:border-[color:var(--primary-line)] transition">
-                      <span className="w-10 h-10 rounded-xl grid place-items-center shrink-0"
-                            style={{ background: 'var(--primary-soft)' }}>📄</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[13px] font-semibold truncate">{f.original_name}</span>
-                        <span className="block text-[11px] text-ink-faint">
-                          {f.source === 'drive' ? 'เปิดใน Google Drive' : 'ดาวน์โหลด'}
+                      className="group flex items-center gap-3 p-3 min-h-[44px] rounded-2xl border-2 border-[color:var(--border)] bg-white
+                                 transition hover:border-primary-line hover:bg-primary-soft/40 hover:-translate-y-0.5">
+                      <span className="w-11 h-11 rounded-xl bg-primary-soft grid place-items-center text-lg shrink-0 group-hover:scale-110 transition-transform">{fileIcon(f.mime_type)}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[12.5px] font-bold truncate group-hover:text-primary-deep transition-colors">{f.original_name}</span>
+                        <span className="block text-[10.5px] text-ink-muted">
+                          {f.source === 'drive' ? 'เปิดใน Google Drive' : humanSize(f.size_bytes)}
                         </span>
                       </span>
-                      <span className="text-[13px]">↗</span>
+                      <span className="w-8 h-8 rounded-full grad-bg text-white grid place-items-center text-[12px] font-extrabold shrink-0 opacity-80 group-hover:opacity-100 transition" aria-hidden="true">⬇</span>
                     </a>
                   ))}
                 </div>
@@ -110,7 +186,40 @@ export default function ItemDetail(p: ItemDetailProps) {
             )}
           </aside>
         </div>
-      </div>
-    </>
+
+        {/* ================= ก่อนหน้า / ถัดไป ================= */}
+        {(p.prev || p.next) && (
+          <nav className="mt-10 grid sm:grid-cols-2 gap-4" aria-label="รายการอื่น">
+            {p.prev ? (
+              <Link href={p.prev.href} className="card-pop group flex items-center gap-3.5 !rounded-[1.5rem] px-4 py-4 min-h-[44px]">
+                <span className="w-11 h-11 shrink-0 rounded-full bg-primary-soft text-primary-deep grid place-items-center text-lg
+                                 font-extrabold transition group-hover:bg-[image:var(--grad)] group-hover:text-white group-hover:-translate-x-0.5" aria-hidden="true">←</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10.5px] font-extrabold tracking-[.1em] uppercase text-primary-deep">{p.prev.label}</span>
+                  <span className="block text-[13px] font-bold leading-snug line-2 mt-0.5">{p.prev.title}</span>
+                  <span className="block text-[10.5px] text-ink-muted mt-0.5">{p.prev.meta}</span>
+                </span>
+              </Link>
+            ) : <span className="hidden sm:block" />}
+
+            {p.next && (
+              <Link href={p.next.href} className="card-pop group flex items-center gap-3.5 !rounded-[1.5rem] px-4 py-4 min-h-[44px]">
+                <span className="min-w-0 flex-1 text-right">
+                  <span className="block text-[10.5px] font-extrabold tracking-[.1em] uppercase text-primary-deep">{p.next.label}</span>
+                  <span className="block text-[13px] font-bold leading-snug line-2 mt-0.5">{p.next.title}</span>
+                  <span className="block text-[10.5px] text-ink-muted mt-0.5">{p.next.meta}</span>
+                </span>
+                <span className="w-11 h-11 shrink-0 rounded-full bg-primary-soft text-primary-deep grid place-items-center text-lg
+                                 font-extrabold transition group-hover:bg-[image:var(--grad)] group-hover:text-white group-hover:translate-x-0.5" aria-hidden="true">→</span>
+              </Link>
+            )}
+          </nav>
+        )}
+
+        <div className="mt-6 text-center">
+          <Link href={p.footerHref} className="btn btn-primary">{p.footerLabel}</Link>
+        </div>
+      </section>
+    </main>
   )
 }

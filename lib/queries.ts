@@ -416,3 +416,43 @@ export const getIndicatorWorkTotal = async (indicatorId: number): Promise<number
   Number(await scalar<number>(
     `SELECT COUNT(*) FROM works WHERE indicator_id = ? AND status='published' AND deleted_at IS NULL`,
     [indicatorId]) ?? 0)
+
+
+/* ---------------- ก่อนหน้า / ถัดไป ของรางวัลและการพัฒนาตนเอง ---------------- */
+
+export interface AwardNeighbor { id: number; title: string; award_date: string | null; level: string }
+export interface SelfDevNeighbor { id: number; title: string; start_date: string | null; type: string }
+
+export async function getAwardNeighbors(awardDate: string | null, id: number) {
+  const [prev, next] = await Promise.all([
+    one<AwardNeighbor>(
+      `SELECT id, title, award_date, level FROM awards
+       WHERE deleted_at IS NULL AND (award_date < ? OR (award_date = ? AND id < ?))
+       ORDER BY award_date DESC, id DESC LIMIT 1`, [awardDate, awardDate, id]),
+    one<AwardNeighbor>(
+      `SELECT id, title, award_date, level FROM awards
+       WHERE deleted_at IS NULL AND (award_date > ? OR (award_date = ? AND id > ?))
+       ORDER BY award_date ASC, id ASC LIMIT 1`, [awardDate, awardDate, id]),
+  ])
+  return { prev, next }
+}
+
+export async function getSelfDevNeighbors(startDate: string | null, id: number) {
+  const [prev, next] = await Promise.all([
+    one<SelfDevNeighbor>(
+      `SELECT id, title, start_date, type FROM self_developments
+       WHERE deleted_at IS NULL AND (start_date < ? OR (start_date = ? AND id < ?))
+       ORDER BY start_date DESC, id DESC LIMIT 1`, [startDate, startDate, id]),
+    one<SelfDevNeighbor>(
+      `SELECT id, title, start_date, type FROM self_developments
+       WHERE deleted_at IS NULL AND (start_date > ? OR (start_date = ? AND id > ?))
+       ORDER BY start_date ASC, id ASC LIMIT 1`, [startDate, startDate, id]),
+  ])
+  return { prev, next }
+}
+
+/** จำนวนรายการพัฒนาตนเองในปีงบประมาณหนึ่ง */
+export const getSelfDevCountByYear = async (fiscalYear: number): Promise<number> =>
+  Number(await scalar<number>(
+    'SELECT COUNT(*) FROM self_developments WHERE deleted_at IS NULL AND fiscal_year = ?',
+    [fiscalYear]) ?? 0)
