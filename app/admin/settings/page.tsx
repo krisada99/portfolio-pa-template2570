@@ -5,6 +5,8 @@ import { isSiteTheme, thaiDate, excerpt } from '@/lib/theme'
 import PageHead from '@/components/admin/PageHead'
 import AjaxForm, { SubmitButton } from '@/components/admin/AjaxForm'
 import ThemePicker, { type ThemeOption } from '@/components/admin/ThemePicker'
+import RecoveryPanel from '@/components/admin/RecoveryPanel'
+import { hasRecoveryCode } from '@/lib/recovery'
 import { changePassword } from './actions'
 
 /**
@@ -50,7 +52,7 @@ const th = (n: unknown) => Number(n ?? 0).toLocaleString('th-TH')
 export default async function SettingsAdmin() {
   await requireAdmin()   // ต้องตรวจในทุกหน้า ไม่ใช่แค่ layout — Next render layout กับ page พร้อมกัน
 
-  const [themeRaw, user, logs, totals] = await Promise.all([
+  const [themeRaw, user, logs, totals, hasRecovery] = await Promise.all([
     getSetting('theme'),
     one<{ username: string }>('SELECT username FROM users ORDER BY id LIMIT 1'),
     all<LogRow>('SELECT * FROM activity_log ORDER BY id DESC LIMIT 40'),
@@ -59,6 +61,7 @@ export default async function SettingsAdmin() {
         (SELECT COUNT(*) FROM works WHERE deleted_at IS NULL) AS works,
         (SELECT COUNT(*) FROM work_images) + (SELECT COUNT(*) FROM item_images) AS images,
         (SELECT COALESCE(SUM(view_count),0) FROM works WHERE deleted_at IS NULL) AS views`),
+    hasRecoveryCode(),
   ])
   const theme = isSiteTheme(themeRaw) ? themeRaw : 'royal'
 
@@ -120,13 +123,7 @@ export default async function SettingsAdmin() {
             <SubmitButton className="btn btn-primary w-full">💾 เปลี่ยนรหัสผ่าน</SubmitButton>
           </AjaxForm>
 
-          <div className="mt-5 pt-4 border-t border-dashed border-primary-line/60">
-            <p className="text-[12px] text-ink-muted leading-relaxed">
-              🔑 ถ้าลืมรหัสผ่าน ให้รันคำสั่งนี้ในเครื่องที่มีโค้ดของเว็บ
-              {' '}(ต้องตั้ง <code className="rounded bg-[color:var(--divider)] px-1.5 py-0.5 text-[11.5px]">TURSO_DATABASE_URL</code> ให้ตรงกับฐานข้อมูลจริง)
-            </p>
-            <pre className="mt-2 p-3 rounded-xl bg-[color:var(--divider)] text-[12px] overflow-x-auto">node scripts/create-admin.mjs admin รหัสผ่านใหม่ &quot;ชื่อ-สกุล&quot;</pre>
-          </div>
+          <RecoveryPanel has={hasRecovery} />
         </section>
 
         {/* ================= ข้อมูลระบบ ================= */}

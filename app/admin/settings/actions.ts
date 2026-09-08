@@ -5,6 +5,7 @@ import { requireAdmin, logAction, hashPassword, verifyPassword } from '@/lib/aut
 import { db, one, now } from '@/lib/db'
 import { str } from '@/lib/form'
 import { VALID_THEMES, type SiteTheme } from '@/lib/theme'
+import { makeRecoveryCode, saveRecoveryCode } from '@/lib/recovery'
 
 export type Result = { ok: true } | { ok: false; error: string }
 
@@ -44,4 +45,16 @@ export async function changePassword(f: FormData): Promise<Result> {
   })
   await logAction('เปลี่ยนรหัสผ่าน', 'users', session.uid)
   return { ok: true }
+}
+
+/**
+ * ออกรหัสกู้คืนใบใหม่ — ใบเก่าใช้ไม่ได้ทันที
+ * คืนรหัสตัวจริงกลับไปให้โชว์ครั้งเดียว ระบบเก็บไว้แค่ค่าที่ hash แล้ว
+ */
+export async function newRecoveryCode(): Promise<{ ok: true; code: string } | { ok: false; error: string }> {
+  const session = await requireAdmin()
+  const code = makeRecoveryCode()
+  await saveRecoveryCode(code)
+  await logAction('ออกรหัสกู้คืนใบใหม่', 'site_settings', session.uid)
+  return { ok: true, code }
 }

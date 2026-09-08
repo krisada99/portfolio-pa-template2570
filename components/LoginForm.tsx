@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { doLogin } from '@/app/login/actions'
@@ -49,6 +50,12 @@ export default function LoginForm({ next, locked }: { next: string; locked: numb
       <button type="submit" className="btn btn-primary w-full mt-6 !min-h-[52px] text-[15px]" disabled={locked > 0 || busy}>
         {busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ →'}
       </button>
+
+      <p className="mt-4 text-center">
+        <Link href="/recover" className="text-[12.5px] text-ink-muted hover:text-primary-deep underline underline-offset-4">
+          ลืมรหัสผ่าน?
+        </Link>
+      </p>
     </form>
   )
 }

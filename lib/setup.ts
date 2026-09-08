@@ -2,6 +2,7 @@ import 'server-only'
 import { db, scalar, now } from './db'
 import { hashPassword } from './auth'
 import { SCHEMA_SQL, SEED_CORE_SQL, SEED_DEMO_SQL } from './sql-bundle'
+import { makeRecoveryCode, saveRecoveryCode } from './recovery'
 
 /**
  * ตัวติดตั้งสำหรับเจ้าของเว็บคนใหม่
@@ -95,13 +96,13 @@ export interface InstallOptions {
   withDemo: boolean
 }
 
-export interface InstallResult { ok: boolean; log: string[]; error?: string }
+export interface InstallResult { ok: boolean; log: string[]; error?: string; recoveryCode?: string }
 
 export async function install(opts: InstallOptions): Promise<InstallResult> {
   const log: string[] = []
   try {
     if (!(await isFresh())) {
-      return { ok: false, log, error: 'ระบบนี้ติดตั้งไปแล้ว — ถ้าลืมรหัสผ่านให้ใช้ npm run admin:create' }
+      return { ok: false, log, error: 'ระบบนี้ติดตั้งไปแล้ว — ถ้าลืมรหัสผ่านให้ใช้รหัสกู้คืนที่หน้า /recover' }
     }
     if (opts.username.length < 3) return { ok: false, log, error: 'ชื่อผู้ใช้ต้องยาวอย่างน้อย 3 ตัวอักษร' }
     if (opts.password.length < 8) return { ok: false, log, error: 'รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร' }
@@ -143,7 +144,13 @@ export async function install(opts: InstallOptions): Promise<InstallResult> {
       })
       log.push('ตั้งชื่อครูในโปรไฟล์ให้แล้ว')
     }
-    return { ok: true, log }
+
+    // รหัสกู้คืน — โชว์ครั้งเดียวตอนติดตั้งเสร็จ ไว้ใช้ตอนลืมรหัสผ่าน
+    const recoveryCode = makeRecoveryCode()
+    await saveRecoveryCode(recoveryCode)
+    log.push('สร้างรหัสกู้คืนสำหรับกรณีลืมรหัสผ่าน')
+
+    return { ok: true, log, recoveryCode }
   } catch (e) {
     return { ok: false, log, error: e instanceof Error ? e.message : String(e) }
   }
