@@ -1,4 +1,5 @@
 import { createClient, type InValue } from '@libsql/client'
+import { isMissingTable } from './db-error'
 
 /**
  * ตัวเชื่อมฐานข้อมูล — ใช้ตัวเดียวกันทั้งตอนพัฒนาและตอนขึ้นจริง
@@ -23,12 +24,10 @@ export type Row = Record<string, unknown>
  * ถ้าปล่อยให้ throw ตอน build จะพังก่อนที่ครูจะได้เปิด /setup ด้วยซ้ำ
  * = ติดตั้งไม่ได้เลยตลอดกาล
  *
- * จึงคืนค่าว่างแทนการโยน error เฉพาะกรณี "ไม่มีตาราง" เท่านั้น
+ * จึงคืนค่าว่างแทนการโยน error เฉพาะกรณี "ไม่มีตาราง" เท่านั้น (ดู isMissingTable)
  * หน้าเว็บจะ render สภาพว่างแล้วถูกพาไป /setup เอง (ดู app/(site)/layout.tsx)
  * ส่วน error อื่นยังโยนตามปกติ จะได้ไม่กลบปัญหาจริง
  */
-const noTable = (e: unknown) => /no such table/i.test(String((e as Error)?.message ?? e))
-
 let warned = false
 function warnOnce() {
   if (warned) return
@@ -46,7 +45,7 @@ export async function all<T = Row>(sql: string, args: InValue[] = []): Promise<T
     const rs = await db.execute({ sql, args })
     return rs.rows.map((r) => ({ ...r })) as unknown as T[]
   } catch (e) {
-    if (!noTable(e)) throw e
+    if (!isMissingTable(e)) throw e
     warnOnce()
     return []
   }
@@ -66,7 +65,7 @@ export async function scalar<T = unknown>(sql: string, args: InValue[] = []): Pr
     if (!r) return null
     return Object.values(r)[0] as T
   } catch (e) {
-    if (!noTable(e)) throw e
+    if (!isMissingTable(e)) throw e
     warnOnce()
     return null
   }

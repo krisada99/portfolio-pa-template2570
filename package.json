@@ -16,7 +16,9 @@
     "start": "next start -p 3100",
     "admin:create": "node scripts/create-admin.mjs",
     "gen:sql": "node scripts/bundle-sql.mjs",
-    "setup": "node scripts/setup.mjs"
+    "setup": "node scripts/setup.mjs",
+    "test:db": "node --experimental-strip-types --test scripts/db-error.test.mjs",
+    "test": "npm run test:media && npm run test:db"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
