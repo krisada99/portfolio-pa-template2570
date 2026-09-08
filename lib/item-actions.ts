@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { requireAdmin, logAction } from '@/lib/auth'
 import { db, now, one, all } from '@/lib/db'
 import { str, int, date, pick, media } from '@/lib/form'
@@ -168,18 +167,57 @@ export async function deleteSelfDev(id: number): Promise<{ ok: boolean; error?: 
 
 const LEVELS = ['โรงเรียน', 'เขตพื้นที่', 'จังหวัด', 'ภาค', 'ชาติ', 'นานาชาติ'] as const
 
-export async function saveAward(id: number, f: FormData): Promise<void> {
+export interface AwardEdit {
+  id: number; title: string; awarder: string; level: string; award_date: string
+  image_source: MediaSource | null; image_ref: string | null
+  note: string; summary: string; content: string
+  video_url: string; link_url: string; link_label: string
+  images: { id?: number; source: MediaSource; ref: string; caption: string }[]
+  files: { id?: number; source: MediaSource; ref: string; original_name: string }[]
+}
+
+export async function getAwardForEdit(id: number): Promise<AwardEdit | null> {
   await requireAdmin()
+  const r = await one<Record<string, unknown>>(
+    'SELECT * FROM awards WHERE id = ? AND deleted_at IS NULL', [id])
+  if (!r) return null
+  const { images, files } = await readItemMedia('award', id)
+  return {
+    id: Number(r.id),
+    title: String(r.title ?? ''),
+    awarder: String(r.awarder ?? ''),
+    level: String(r.level ?? 'โรงเรียน'),
+    award_date: String(r.award_date ?? ''),
+    image_source: (r.image_source as MediaSource) ?? null,
+    image_ref: (r.image_ref as string) ?? null,
+    note: String(r.note ?? ''),
+    summary: String(r.summary ?? ''),
+    content: String(r.content ?? ''),
+    video_url: String(r.video_url ?? ''),
+    link_url: String(r.link_url ?? ''),
+    link_label: String(r.link_label ?? ''),
+    images, files,
+  }
+}
+
+export async function saveAward(f: FormData): Promise<Result> {
+  await requireAdmin()
+
+  const id = int(f, 'id')
   const title = str(f, 'title', 255)
-  if (!title) redirect(id ? `/admin/awards/${id}?error=title` : '/admin/awards/new?error=title')
+  if (!title) return { ok: false, error: 'กรุณากรอกชื่อรางวัล' }
+  if (!date(f, 'award_date')) return { ok: false, error: 'กรุณาเลือกวันที่ได้รับ' }
+
+  if (id && !await one('SELECT id FROM awards WHERE id = ? AND deleted_at IS NULL', [id]))
+    return { ok: false, error: 'ไม่พบรางวัลที่ต้องการแก้ไข' }
 
   const img = media(f, 'image')
   const t = now()
   const args = [
     title, str(f, 'awarder', 200), pick(f, 'level', LEVELS, 'โรงเรียน'),
     date(f, 'award_date'), img.source, img.ref, str(f, 'note', 400),
-    str(f, 'summary', 400), str(f, 'content', 20000), str(f, 'video_url', 500),
-    str(f, 'link_url', 500), str(f, 'link_label', 120), t,
+    str(f, 'summary', 500), str(f, 'content', 20000), str(f, 'video_url', 255),
+    str(f, 'link_url', 255), str(f, 'link_label', 120), t,
   ]
 
   let rowId = id
@@ -200,15 +238,29 @@ export async function saveAward(id: number, f: FormData): Promise<void> {
   }
 
   await writeItemMedia('award', rowId, f, t)
+
+  // ยังไม่ได้ใส่รูปปก → ใช้รูปแรกในแกลเลอรีแทน เหมือนที่เว็บ PHP บอกไว้ใต้ช่องรูปปก
+  if (!img.ref) {
+    const first = await one<{ source: MediaSource; ref: string }>(
+      `SELECT source, ref FROM item_images WHERE entity_type = 'award' AND entity_id = ?
+       ORDER BY sort_order, id LIMIT 1`, [rowId])
+    if (first) {
+      await db.execute({
+        sql: 'UPDATE awards SET image_source=?, image_ref=? WHERE id=?',
+        args: [first.source, first.ref, rowId],
+      })
+    }
+  }
+
   await logAction(id ? 'แก้ไขรางวัล' : 'เพิ่มรางวัล', 'awards', rowId, title)
   revalidatePath('/', 'layout')
-  redirect(`/admin/awards/${rowId}?saved=1`)
+  return { ok: true, id: rowId }
 }
 
-export async function deleteAward(id: number): Promise<void> {
+export async function deleteAward(id: number): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin()
   await db.execute({ sql: 'UPDATE awards SET deleted_at = ? WHERE id = ?', args: [now(), id] })
   await logAction('ลบรางวัล', 'awards', id)
   revalidatePath('/', 'layout')
-  redirect('/admin/awards?deleted=1')
+  return { ok: true }
 }
