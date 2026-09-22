@@ -5,6 +5,8 @@ export interface Profile {
   academic_standing: string; subject_group: string; school: string
   affiliation: string; area_office: string; email: string; phone: string
   facebook: string; line_id: string
+  /** ลิงก์ท้ายเว็บที่ครูแก้เองได้ — เว็บที่ยังไม่ได้ migrate จะไม่มีคอลัมน์นี้ */
+  footer_link_url?: string; footer_link_label?: string
   avatar_source: MediaSource | null; avatar_ref: string | null
   avatar_focus_x: number; avatar_focus_y: number
   motto: string; philosophy: string; bio: string | null
@@ -96,3 +98,19 @@ export interface ItemFile {
 
 export interface Education { id: number; year_th: number; degree: string; institute: string; sort_order: number }
 export interface CareerPath { id: number; period: string; position: string; school: string; is_current: number; sort_order: number }
+
+/** รายงานหน้าเดียว — แสดงบนหน้าแรก แยกตามปีงบประมาณ */
+export interface OnePageReport {
+  id: number
+  fiscal_year: number
+  kind: ReportKind
+  title: string
+  file_source: MediaSource | null
+  file_ref: string | null
+  file_kind: 'image' | 'pdf'
+  note: string
+  created_at: string
+  updated_at: string
+}
+
+export type ReportKind = 'salary' | 'pa'

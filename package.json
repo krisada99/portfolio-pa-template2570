@@ -18,7 +18,8 @@
     "gen:sql": "node scripts/bundle-sql.mjs",
     "setup": "node scripts/setup.mjs",
     "test:db": "node --experimental-strip-types --test scripts/db-error.test.mjs",
-    "test": "npm run test:media && npm run test:db"
+    "test": "npm run test:media && npm run test:db",
+    "db:migrate": "turso db shell $TURSO_DB < db/migrate.sql"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

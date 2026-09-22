@@ -253,3 +253,59 @@ export async function listIndicators() {
   await requireAdmin()
   return all('SELECT id, code, name, domain_id FROM indicators ORDER BY sort_order')
 }
+
+/* ============================================================ รายงานหน้าเดียว */
+
+const REPORT_KINDS = ['salary', 'pa'] as const
+const FILE_KINDS = ['image', 'pdf'] as const
+
+/**
+ * บันทึกรายงานหน้าเดียวของปีงบประมาณหนึ่ง (มีอยู่แล้วก็ทับของเดิม)
+ * ผูกกับปีที่มีข้อตกลง PA เท่านั้น — รายการปีบนหน้าแรกยึดจากตรงนั้น
+ */
+export async function saveReport(f: FormData): Promise<Result> {
+  await requireAdmin()
+
+  const year = int(f, 'fiscal_year')
+  const kind = pick(f, 'kind', REPORT_KINDS, 'salary')
+  const fileKind = pick(f, 'file_kind', FILE_KINDS, 'image')
+
+  if (!(await one('SELECT id FROM pa_agreements WHERE fiscal_year = ? AND deleted_at IS NULL', [year])))
+    return { ok: false, error: `ยังไม่มีข้อตกลง PA ของปีงบประมาณ ${year} — สร้างข้อตกลงปีนี้ก่อน` }
+
+  const file = media(f, 'file')
+  if (!file.ref) return { ok: false, error: 'ยังไม่ได้วางลิงก์ไฟล์รายงานจาก Google Drive' }
+
+  const t = now()
+  const cur = await one<{ id: number }>(
+    'SELECT id FROM one_page_reports WHERE fiscal_year = ? AND kind = ?', [year, kind])
+
+  if (cur) {
+    await db.execute({
+      sql: `UPDATE one_page_reports
+               SET title=?, file_source=?, file_ref=?, file_kind=?, note=?, updated_at=?
+             WHERE id=?`,
+      args: [str(f, 'title', 200), file.source, file.ref, fileKind, str(f, 'note', 500), t, cur.id],
+    })
+  } else {
+    await db.execute({
+      sql: `INSERT INTO one_page_reports
+              (fiscal_year, kind, title, file_source, file_ref, file_kind, note, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?)`,
+      args: [year, kind, str(f, 'title', 200), file.source, file.ref, fileKind, str(f, 'note', 500), t, t],
+    })
+  }
+
+  await logAction('บันทึกรายงานหน้าเดียว', 'one_page_reports', cur?.id ?? 0, `${kind} ปีงบประมาณ ${year}`)
+  revalidatePath('/', 'layout')
+  return { ok: true, id: cur?.id }
+}
+
+/** ลบรายงานหน้าเดียวออกจากปีนั้น */
+export async function deleteReport(id: number): Promise<Result> {
+  await requireAdmin()
+  await db.execute({ sql: 'DELETE FROM one_page_reports WHERE id = ?', args: [id] })
+  await logAction('ลบรายงานหน้าเดียว', 'one_page_reports', id, '')
+  revalidatePath('/', 'layout')
+  return { ok: true, id }
+}

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { requireAdmin, logout } from '@/lib/auth'
+import { ensureMigrated } from '@/lib/setup'
 import { getProfile } from '@/lib/queries'
 import AdminHeader from '@/components/admin/AdminHeader'
 import AdminNav from '@/components/admin/AdminNav'
@@ -13,6 +14,8 @@ export const metadata = { title: 'ระบบหลังบ้าน', robots:
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin()
+  // เว็บที่ติดตั้งไว้ก่อนหน้า จะได้ตาราง/คอลัมน์ที่เพิ่มมาใหม่เองตอนเข้าหลังบ้านครั้งแรก
+  await ensureMigrated()
   const profile = await getProfile()
 
   async function doLogout() {

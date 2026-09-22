@@ -128,6 +128,25 @@ export default async function ProfileAdmin() {
               <div><label className="lbl" htmlFor="p_line">Line ID</label>
                 <input className="inp" id="p_line" name="line_id" maxLength={80} defaultValue={p?.line_id ?? ''} /><span className="field-error"></span></div>
 
+              {/* หัวข้อ: ลิงก์ท้ายเว็บ */}
+              <div className="md:col-span-2 flex items-center gap-2.5 pt-2">
+                <span className="w-9 h-9 rounded-xl grid place-items-center text-base bg-primary-soft shrink-0">🔗</span>
+                <h3 className="font-bold text-[14px]">ลิงก์ท้ายเว็บ (footer)</h3>
+                <span className="flex-1 h-px bg-[color:var(--divider)]"></span>
+              </div>
+
+              <div><label className="lbl" htmlFor="p_flink">ลิงก์ปลายทาง</label>
+                <input className="inp" id="p_flink" name="footer_link_url" type="url" maxLength={255}
+                  placeholder="https://www.facebook.com/ชื่อเพจ"
+                  defaultValue={p?.footer_link_url ?? ''} /><span className="field-error"></span>
+                <p className="text-[11.5px] text-ink-muted mt-1.5">ใส่ได้ทุกเว็บ เช่น เพจ Facebook, ช่อง YouTube · เว้นว่าง = ไม่แสดงลิงก์นี้</p></div>
+
+              <div><label className="lbl" htmlFor="p_flabel">ข้อความที่แสดง</label>
+                <input className="inp" id="p_flabel" name="footer_link_label" maxLength={60}
+                  placeholder="เพจของครู"
+                  defaultValue={p?.footer_link_label ?? ''} /><span className="field-error"></span>
+                <p className="text-[11.5px] text-ink-muted mt-1.5">เว้นว่าง = ใช้คำว่า “เพจของครู”</p></div>
+
               <Head icon="📊" bg="bg-sunny-soft" pt>ตัวเลขสถิติ (แสดงบนหน้าแรก)</Head>
 
               <div><label className="lbl" htmlFor="p_exp">ประสบการณ์ (ปี)</label>

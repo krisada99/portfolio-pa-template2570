@@ -3,10 +3,19 @@ import type { Profile } from '@/lib/types'
 import { currentAcademicYear } from '@/lib/theme'
 
 export default function Footer({ profile }: { profile: Profile | null }) {
-  const fb = (profile?.facebook ?? '').trim()
-  const fbUrl = fb && !/^https?:\/\//i.test(fb) && !/\s/.test(fb)
-    ? `https://facebook.com/${fb.replace(/^[/@]+/, '')}`
-    : fb
+  /* ลิงก์ที่แก้ไขได้เองใน หลังบ้าน → โปรไฟล์ครู
+     ถ้ายังไม่ได้ตั้ง footer_link_url จะถอยไปใช้ช่อง Facebook เดิมให้อัตโนมัติ */
+  let fbUrl = (profile?.footer_link_url ?? '').trim()
+  if (!fbUrl) {
+    const fb = (profile?.facebook ?? '').trim()
+    fbUrl = fb && !/^https?:\/\//i.test(fb) && !/\s/.test(fb)
+      ? `https://www.facebook.com/${fb.replace(/^[/@]+/, '')}`
+      : fb
+  }
+  // รับเฉพาะ http/https — กันลิงก์แปลกปลอมอย่าง javascript:
+  if (fbUrl && !/^https?:\/\//i.test(fbUrl)) fbUrl = ''
+
+  const fbLabel = (profile?.footer_link_label ?? '').trim() || 'เพจของครู'
 
   return (
     <footer className="footer-bar rainbow-top mt-16 no-print">
@@ -29,7 +38,7 @@ export default function Footer({ profile }: { profile: Profile | null }) {
             <>
               <span className="text-white/40 mx-1.5">|</span>
               <a href={fbUrl} target="_blank" rel="noopener noreferrer"
-                 className="font-semibold text-white underline underline-offset-4 decoration-white/40">เพจของครู</a>
+                 className="font-semibold text-white underline underline-offset-4 decoration-white/40">{fbLabel}</a>
             </>
           )}
           <span className="text-white/40 mx-1.5">|</span>

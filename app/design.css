@@ -428,6 +428,73 @@ img.lazy-img.loaded{opacity:1}
 .ring-grad::before{content:none}
 .sticker{background:#fff;border-radius:.8rem;padding:.55rem .85rem;box-shadow:var(--shadow);display:flex;align-items:center;gap:.55rem;border:1px solid var(--border)}
 
+/* ==========================================================================
+   รายงานหน้าเดียว (หน้าแรก) — การ์ดเอกสารทางการ รองรับทั้งรูปภาพและ PDF
+   พรีวิวกินเต็มความกว้างการ์ด และเลื่อนขึ้น-ลงดูหน้าถัดไปได้
+   ========================================================================== */
+.report-card{display:flex;flex-direction:column;overflow:hidden;background:var(--card);
+  border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);
+  transition:box-shadow .3s var(--ease-pop),transform .3s var(--ease-pop)}
+.report-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+
+.report-head{display:flex;align-items:flex-start;gap:.85rem;padding:1.05rem 1.15rem;color:#fff;position:relative}
+.report-head.is-primary{background:var(--grad)}
+.report-head.is-gold{background:linear-gradient(135deg,#8F6D00 0%,#F5C518 100%)}
+.report-head.is-gold .report-kicker{color:rgba(255,255,255,.92)}
+.report-ico{width:2.9rem;height:2.9rem;flex:0 0 auto;border-radius:1rem;display:grid;place-items:center;
+  font-size:1.35rem;background:rgba(255,255,255,.22);backdrop-filter:blur(6px)}
+.report-kicker{font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.85)}
+.report-title{font-size:.95rem;font-weight:800;line-height:1.35;margin-top:.15rem;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+@media (min-width:640px){.report-title{-webkit-line-clamp:2}}
+.report-year{flex:0 0 auto;align-self:center;font-size:.72rem;font-weight:800;white-space:nowrap;
+  background:rgba(255,255,255,.95);color:var(--ink);border-radius:999px;padding:.3rem .7rem}
+
+/* ---- พื้นที่พรีวิว ---- */
+.report-view{position:relative;height:380px;overflow:hidden;
+  background:linear-gradient(180deg,#F4F6FA 0%,#E9EDF4 100%);border-bottom:1px solid var(--border)}
+@media (min-width:768px){.report-view{height:500px}}
+
+.report-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;scrollbar-color:rgba(20,33,61,.25) transparent}
+.report-scroll::-webkit-scrollbar{width:6px}
+.report-scroll::-webkit-scrollbar-thumb{background:rgba(20,33,61,.22);border-radius:99px}
+.report-scroll::-webkit-scrollbar-track{background:transparent}
+
+/* หนึ่งหน้ากระดาษ = เต็มความกว้างการ์ด สูงตามสัดส่วนจริง
+   กำหนดขนาดไว้ใน style ของ element ด้วย กัน CSS เก่าค้างแคชแล้วรูปบานเกินกรอบ */
+.report-page{display:block;width:100%;height:auto;background:#fff}
+
+/* PDF บน Google Drive — ใช้ตัวอ่านของ Google ฝังมา ใช้ได้ทั้งคอมและมือถือ */
+.report-embed{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff}
+
+.report-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:2.75rem 1.5rem;min-height:260px;
+  background:repeating-linear-gradient(45deg,var(--bg) 0 12px,#fff 12px 24px)}
+
+/* เงาจางขอบล่าง + ป้ายบอกว่าเลื่อนได้ (เฉพาะพรีวิวรูปที่ยาวเกินกรอบ) */
+.report-fade{position:absolute;left:0;right:0;bottom:0;height:46px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(233,237,244,0),rgba(233,237,244,.92))}
+.report-hint{position:absolute;left:50%;bottom:.6rem;transform:translateX(-50%);pointer-events:none;
+  background:rgba(17,24,39,.78);color:#fff;font-size:.68rem;font-weight:700;
+  border-radius:999px;padding:.28rem .7rem;white-space:nowrap;backdrop-filter:blur(4px)}
+
+/* ---- ท้ายการ์ด ---- */
+.report-foot{padding:1rem 1.15rem 1.15rem;display:flex;flex-direction:column;gap:.7rem;margin-top:auto}
+.report-note{font-size:.8rem;line-height:1.7;color:var(--text-2)}
+.report-meta{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;font-size:.72rem;color:var(--muted)}
+.report-tag{font-weight:800;color:var(--primary);background:var(--primary-soft);
+  border-radius:999px;padding:.2rem .55rem}
+.report-actions{display:flex;gap:.55rem}
+
+/* ตัวเลือกปีบนหน้าแรกอยู่ชิดขวา → เปิดเมนูไปทางซ้าย ไม่ให้ล้นขอบจอ */
+@media (min-width:1024px){.report-ysel .ysel-menu{left:auto;right:0}}
+
+@media print{.report-actions,.report-hint,.report-fade{display:none!important}
+  .report-view{height:auto;overflow:visible}
+  .report-scroll{position:static;overflow:visible}}
+
 /* ---------- อื่น ๆ ---------- */
 .scroll-x{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
 .scroll-x::-webkit-scrollbar{display:none}

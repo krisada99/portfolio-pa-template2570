@@ -11,6 +11,7 @@ const files = {
   SCHEMA_SQL: 'db/schema.sql',
   SEED_CORE_SQL: 'db/seed-core.sql',
   SEED_DEMO_SQL: 'db/seed-demo.sql',
+  MIGRATE_SQL: 'db/migrate.sql',
 }
 
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')

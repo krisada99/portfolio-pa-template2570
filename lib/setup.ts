@@ -1,7 +1,7 @@
 import 'server-only'
 import { db, scalar, now } from './db'
 import { hashPassword } from './auth'
-import { SCHEMA_SQL, SEED_CORE_SQL, SEED_DEMO_SQL } from './sql-bundle'
+import { SCHEMA_SQL, SEED_CORE_SQL, SEED_DEMO_SQL, MIGRATE_SQL } from './sql-bundle'
 import { makeRecoveryCode, saveRecoveryCode } from './recovery'
 
 /**
@@ -89,6 +89,28 @@ async function runScript(sql: string): Promise<number> {
   return stmts.length
 }
 
+/**
+ * อัปเดตโครงฐานข้อมูลของเว็บที่ติดตั้งไปแล้ว ให้มีตาราง/คอลัมน์ที่เพิ่มมาทีหลัง
+ *
+ * รันทีละคำสั่ง (ไม่ใช้ batch) เพราะ ALTER TABLE ADD COLUMN จะ error
+ * ถ้าคอลัมน์นั้นมีอยู่แล้ว — ซึ่งเป็นเรื่องปกติเมื่อรันซ้ำ จึงกลืน error กลุ่มนี้ทิ้ง
+ *
+ * @returns จำนวนคำสั่งที่เปลี่ยนแปลงจริง (0 = ฐานข้อมูลใหม่อยู่แล้ว)
+ */
+export async function migrate(): Promise<number> {
+  let changed = 0
+  for (const stmt of splitSql(MIGRATE_SQL)) {
+    try {
+      await db.execute(stmt)
+      changed++
+    } catch (e) {
+      const msg = String((e as Error)?.message ?? '').toLowerCase()
+      if (!/duplicate column|already exists/.test(msg)) throw e
+    }
+  }
+  return changed
+}
+
 export interface InstallOptions {
   username: string
   password: string
@@ -154,4 +176,17 @@ export async function install(opts: InstallOptions): Promise<InstallResult> {
   } catch (e) {
     return { ok: false, log, error: e instanceof Error ? e.message : String(e) }
   }
+}
+
+/**
+ * เรียกจากเลย์เอาต์หลังบ้าน — รันแค่ครั้งเดียวต่ออินสแตนซ์เซิร์ฟเวอร์
+ * เว็บที่ติดตั้งไว้ก่อนหน้าจะได้ตาราง/คอลัมน์ใหม่เองโดยครูไม่ต้องทำอะไร
+ * ถ้าพลาดก็ไม่ทำให้หน้าเว็บล่ม — แค่เขียน log ไว้ (ฟีเจอร์ใหม่จะยังไม่ขึ้นเท่านั้น)
+ */
+let migratedOnce: Promise<void> | null = null
+export function ensureMigrated(): Promise<void> {
+  migratedOnce ??= migrate()
+    .then((n) => { if (n) console.log(`[migrate] อัปเดตโครงฐานข้อมูล ${n} คำสั่ง`) })
+    .catch((e) => { console.warn('[migrate] ข้ามการอัปเดตโครงฐานข้อมูล:', (e as Error)?.message) })
+  return migratedOnce
 }

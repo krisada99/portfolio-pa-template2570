@@ -9,6 +9,19 @@ export type Result = { ok: true; id?: number } | { ok: false; error: string }
 
 /* ---------------- โปรไฟล์ครู ---------------- */
 
+/**
+ * ลิงก์ท้ายเว็บ — รับเฉพาะ http/https
+ * ถ้าพิมพ์มาโดยไม่มี https:// ให้เติมให้ · ถ้าเป็นสคีมอื่น (เช่น javascript:) ตัดทิ้ง
+ */
+function footerLinkUrl(f: FormData): string {
+  let url = str(f, 'footer_link_url', 255)
+  if (!url) return ''
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) url = 'https://' + url.replace(/^\/+/, '')
+  if (!/^https?:\/\//i.test(url)) return ''
+  try { new URL(url) } catch { return '' }
+  return url.slice(0, 255)
+}
+
 export async function saveProfile(f: FormData): Promise<Result> {
   await requireAdmin()                     // ด่านตรวจ — ห้ามตัดออกเด็ดขาด
 
@@ -20,6 +33,7 @@ export async function saveProfile(f: FormData): Promise<Result> {
     sql: `UPDATE teacher_profile SET
             full_name=?, nickname=?, position=?, academic_standing=?, subject_group=?,
             school=?, affiliation=?, area_office=?, email=?, phone=?, facebook=?, line_id=?,
+            footer_link_url=?, footer_link_label=?,
             avatar_source=?, avatar_ref=?, avatar_focus_x=?, avatar_focus_y=?,
             motto=?, philosophy=?, bio=?, experience_years=?, teaching_hours=?, updated_at=?
           WHERE id = 1`,
@@ -28,6 +42,7 @@ export async function saveProfile(f: FormData): Promise<Result> {
       str(f, 'academic_standing', 100), str(f, 'subject_group', 150),
       str(f, 'school', 150), str(f, 'affiliation', 150), str(f, 'area_office', 150),
       str(f, 'email', 120), str(f, 'phone', 40), str(f, 'facebook', 150), str(f, 'line_id', 80),
+      footerLinkUrl(f), str(f, 'footer_link_label', 60),
       avatar.source, avatar.ref,
       Math.min(100, Math.max(0, int(f, 'avatar_focus_x', 50))),
       Math.min(100, Math.max(0, int(f, 'avatar_focus_y', 35))),

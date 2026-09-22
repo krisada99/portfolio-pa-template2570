@@ -1,26 +1,42 @@
 import Link from 'next/link'
 import {
   getProfile, getDomains, getIndicators, getWorkCountByIndicator,
-  getWorks, getHomeStats, getAgreements, getAgreement,
+  getHomeStats, getAgreements,
   getPaDetails, getPaChallenges,
+  getReportsOfYear, getReportCountByYear, REPORT_KIND_LIST,
 } from '@/lib/queries'
 import { imageUrl, IMG } from '@/lib/media'
-import { domainTheme, currentAcademicYear } from '@/lib/theme'
-import WorkCard from '@/components/WorkCard'
+import { domainTheme, currentAcademicYear, currentFiscalYear } from '@/lib/theme'
 import CountUp from '@/components/CountUp'
+import ReportCard from '@/components/ReportCard'
+import YearSelect from '@/components/YearSelect'
 
 export const metadata = { title: 'หน้าแรก' }
 
 /**
  * หน้าแรก — แปลงมาจาก index.php ของเว็บ PHP ให้โครงสร้างและข้อความตรงกัน
- *   HERO → ความครบถ้วนของแฟ้ม → 3 ด้าน → ผลงานล่าสุด → แบนเนอร์ PA
+ *   HERO → ความครบถ้วนของแฟ้ม → 3 ด้าน → รายงานหน้าเดียว → แบนเนอร์ PA
  */
-export default async function HomePage() {
-  const [profile, domains, indicators, byInd, latest, stats, agreements] = await Promise.all([
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ rpy?: string }>
+}) {
+  const sp = await searchParams
+  const [profile, domains, indicators, byInd, stats, agreements, reportCounts] = await Promise.all([
     getProfile(), getDomains(), getIndicators(), getWorkCountByIndicator(),
-    getWorks({ limit: 6 }), getHomeStats(), getAgreements(),
+    getHomeStats(), getAgreements(), getReportCountByYear(),
   ])
   const agreement = agreements[0] ?? null
+
+  /* ---------- รายงานหน้าเดียว (ยึดรายการปีงบประมาณจากข้อตกลง PA) ---------- */
+  const repYears = agreements.map((a) => Number(a.fiscal_year))
+  const asked = Number(sp.rpy ?? 0)
+  // ค่าเริ่มต้น: ปีล่าสุดที่มีรายงานอยู่จริง ถ้าไม่มีเลยก็ใช้ปีล่าสุด
+  const repYear = repYears.includes(asked)
+    ? asked
+    : (repYears.find((y) => (reportCounts[y] ?? 0) > 0) ?? repYears[0] ?? currentFiscalYear())
+  const reports = await getReportsOfYear(repYear)
   const [paDetails, challenges] = agreement
     ? await Promise.all([getPaDetails(agreement.id), getPaChallenges(agreement.id)])
     : [[], []]
@@ -218,26 +234,42 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ================= ผลงานล่าสุด ================= */}
+      {/* ================= รายงานหน้าเดียว ================= */}
       <section className="max-w-[1240px] mx-auto px-4 md:px-10 pt-16">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+        {/*
+          relative z-30: การ์ดด้านล่างสร้าง stacking context ของตัวเอง
+          ถ้าไม่ยกทั้งแถวหัวข้อขึ้นมา เมนูเลือกปีจะถูกการ์ดบัง
+          แต่ต้องต่ำกว่าแถบเมนูด้านบน (z-40) ไม่งั้นเวลาเลื่อนจะทะลุขึ้นไปทับ
+        */}
+        <div className="relative z-30 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
-            <span className="chip chip-accent">✨ อัปเดตล่าสุด</span>
-            <h2 className="mt-3 text-[26px] md:text-[34px] font-extrabold leading-tight">ผลงาน<span className="grad-text">ล่าสุด</span></h2>
+            <span className="chip chip-accent">📄 สรุปผลการปฏิบัติงาน</span>
+            <h2 className="mt-3 text-[26px] md:text-[34px] font-extrabold leading-tight">รายงาน<span className="grad-text">หน้าเดียว</span></h2>
+            <p className="mt-2 text-[13.5px] text-ink-muted max-w-[620px]">
+              สรุปผลการปฏิบัติงานในหน้าเดียว ดูได้ทันทีบนหน้านี้ กดดูเต็มจอหรือดาวน์โหลดเก็บไว้ได้
+            </p>
           </div>
-          <Link href="/pa" className="btn btn-ghost btn-sm">ดูทั้งหมด {stats.total_works} ชิ้น →</Link>
+
+          {repYears.length > 1 && (
+            <div className="report-ysel lg:pb-1">
+              <YearSelect
+                tone="light"
+                items={repYears.map((y) => ({
+                  year: y,
+                  meta: `${reportCounts[y] ?? 0}/2 ฉบับ`,
+                  url: `/?rpy=${y}#reports`,
+                  active: y === repYear,
+                }))}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-7">
-          {latest.map((w) => <WorkCard key={w.id} work={w} />)}
+        <div id="reports" className="grid md:grid-cols-2 gap-5 md:gap-6 mt-7 scroll-mt-24">
+          {REPORT_KIND_LIST.map((k) => (
+            <ReportCard key={k} kind={k} row={reports[k]} year={repYear} />
+          ))}
         </div>
-
-        {latest.length === 0 && (
-          <div className="card-soft rounded-[2rem] text-center py-14 mt-6">
-            <div className="text-5xl">🗂️</div>
-            <p className="mt-3 text-ink-muted">ยังไม่มีผลงานเผยแพร่ · เข้าสู่ระบบเพื่อเพิ่มผลงานชิ้นแรก</p>
-          </div>
-        )}
       </section>
 
       {/* ================= แบนเนอร์ PA ================= */}

@@ -58,6 +58,9 @@ CREATE TABLE teacher_profile (
   phone             TEXT NOT NULL DEFAULT '',
   facebook          TEXT NOT NULL DEFAULT '',
   line_id           TEXT NOT NULL DEFAULT '',
+  -- ลิงก์ท้ายเว็บ (footer) ที่ครูแก้เองได้ — ว่าง = ถอยไปใช้ค่าในช่อง facebook
+  footer_link_url   TEXT NOT NULL DEFAULT '',
+  footer_link_label TEXT NOT NULL DEFAULT '',
   avatar_source     TEXT CHECK(avatar_source IN ('drive','static')) NULL,
   avatar_ref        TEXT NULL,
   avatar_focus_x    INTEGER NOT NULL DEFAULT 50,
@@ -318,6 +321,26 @@ CREATE TABLE activity_log (
   ip         TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ---------------------------------------------------------------------
+--  รายงานหน้าเดียว — แสดงบนหน้าแรก แยกตามปีงบประมาณ
+--    kind = 'salary' (ประเมินเพื่อเลื่อนเงินเดือน) · 'pa' (ตามข้อตกลง)
+--    file_kind = 'image' แสดงเป็นรูป · 'pdf' ฝังตัวอ่าน PDF ของ Google Drive
+-- ---------------------------------------------------------------------
+CREATE TABLE one_page_reports (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  fiscal_year INTEGER NOT NULL,
+  kind        TEXT NOT NULL CHECK(kind IN ('salary','pa')),
+  title       TEXT NOT NULL DEFAULT '',
+  file_source TEXT CHECK(file_source IN ('drive','static')) NULL,
+  file_ref    TEXT NULL,
+  file_kind   TEXT NOT NULL DEFAULT 'image' CHECK(file_kind IN ('image','pdf')),
+  note        TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (fiscal_year, kind)
+);
+CREATE INDEX idx_reports_year ON one_page_reports(fiscal_year);
 
 CREATE TABLE site_settings (
   key        TEXT NOT NULL PRIMARY KEY,

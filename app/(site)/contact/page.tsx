@@ -19,15 +19,38 @@ export default async function ContactPage() {
     if (/\s/u.test(v)) return null
     return prefix + v.replace(/^[@/]+/, '')
   }
-  const fbHref = linkFrom(profile?.facebook, 'https://www.facebook.com/')
+  /* ลิงก์เพจ — ถ้าช่อง Facebook เป็นชื่อภาษาไทย จะประกอบเป็น URL ที่ใช้จริงไม่ได้
+     กรณีนั้นให้ถอยไปใช้ "ลิงก์ท้ายเว็บ" ที่ครูตั้งไว้ในโปรไฟล์แทน */
+  const footerLink = (profile?.footer_link_url ?? '').trim()
+  const fbRawInput = (profile?.facebook ?? '').trim()
+  const fbHref =
+    // 1) กรอกเป็นลิงก์เต็มมาแล้ว → ใช้เลย
+    (/^https?:\/\//i.test(fbRawInput) ? fbRawInput : null)
+    // 2) ช่อง Facebook เป็นชื่อเพจ (เช่นภาษาไทย) ประกอบเป็น URL ใช้จริงไม่ได้
+    //    → ใช้ "ลิงก์ท้ายเว็บ" ที่ครูตั้งไว้แทน ถ้าเป็นลิงก์ Facebook
+    ?? (/facebook\.com/i.test(footerLink) ? footerLink : null)
+    // 3) ไม่มีอะไรเลย → เดาจากชื่อผู้ใช้แบบเดิม
+    ?? linkFrom(profile?.facebook, 'https://www.facebook.com/')
   const lineHref = linkFrom(profile?.line_id, 'https://line.me/ti/p/~')
+
+  /* ข้อความบนการ์ด — ถ้าค่าที่กรอกเป็น URL ให้ตัดส่วนหัวออกจะได้อ่านง่าย */
+  let fbText = fbRawInput || fbHref || ''
+  if (/^https?:\/\//i.test(fbText)) {
+    fbText = decodeURIComponent(
+      fbText.replace(/^https?:\/\/(www\.|m\.)?facebook\.com\//i, '').replace(/\/+$/, ''),
+    ) || 'Facebook'
+  }
 
   /* [ไอคอน, ป้าย, ค่าที่แสดง, href, gradient ของช่องไอคอน, คำอธิบายสั้น] */
   const cards: [string, string, string, string | null, string, string][] = []
   if (profile?.email) cards.push(['✉️', 'อีเมล', profile.email, `mailto:${profile.email}`, 'from-coral to-[#2F6FDB]', 'ส่งอีเมลถึงครู'])
   if (profile?.phone) cards.push(['☎️', 'โทรศัพท์', profile.phone, `tel:${profile.phone.replace(/\D/g, '')}`, 'from-mint to-[#E0457B]', 'แตะเพื่อโทร'])
-  if (profile?.facebook) cards.push(['📘', 'Facebook', profile.facebook, fbHref, 'from-sky to-[#1D4ED8]', 'เปิดเพจ Facebook'])
+  if (fbHref) cards.push(['📘', 'Facebook', fbText, fbHref, 'from-sky to-[#1D4ED8]', 'เปิดเพจ Facebook'])
   if (profile?.line_id) cards.push(['💬', 'Line ID', profile.line_id, lineHref, 'from-sunny to-[#F5C518]', 'เพิ่มเพื่อนใน Line'])
+
+  /* ชื่อเล่นบางคนขึ้นต้นด้วย "ครู" อยู่แล้ว (เช่น "ครูเอ๋") จะได้ไม่กลายเป็น "ครูครูเอ๋" */
+  const nick = (profile?.nickname ?? '').trim() || 'ครู'
+  const contactName = nick.startsWith('ครู') ? nick : `ครู${nick}`
 
   return (
     <main>
@@ -49,7 +72,7 @@ export default async function ContactPage() {
           <div>
             <span className="chip chip-glass mt-6">✉️ ช่องทางติดต่อ</span>
             <h1 className="mt-3 text-[34px] md:text-[52px] font-extrabold leading-[1.08] tracking-tight">
-              ติดต่อ<span className="grad-text">ครู{profile?.nickname}</span>
+              ติดต่อ<span className="grad-text">{contactName}</span>
             </h1>
             <p className="mt-3 text-[14px] md:text-[15.5px] text-ink-soft font-medium max-w-[560px] mx-auto">
               ยินดีแลกเปลี่ยนเรียนรู้ทางวิชาชีพ และให้คำปรึกษาเรื่องสื่อการสอนดิจิทัล

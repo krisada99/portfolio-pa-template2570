@@ -2,8 +2,7 @@ import Link from 'next/link'
 import { requireAdmin } from '@/lib/auth'
 import {
   getAgreements, getAgreementById, getDomains, getIndicators,
-  getPaChallenges, getPaDetails, getIndicatorOverviewGrouped,
-} from '@/lib/queries'
+  getPaChallenges, getPaDetails, getIndicatorOverviewGrouped, getReportsOfYear, REPORT_KINDS, REPORT_KIND_LIST } from '@/lib/queries'
 import { domainTheme, currentFiscalYear, excerpt } from '@/lib/theme'
 import { fileUrl } from '@/lib/media'
 import PageHead from '@/components/admin/PageHead'
@@ -15,7 +14,7 @@ import ConfirmDelete from '@/components/admin/ConfirmDelete'
 import DriveLinkInput from '@/components/admin/DriveLinkInput'
 import { PaDetailProvider, AddDetailButton, EditDetailButton } from '@/components/admin/PaDetailModal'
 import { ChallengeProvider, NewChallengeButton, EditChallengeButton } from '@/components/admin/PaChallengeModal'
-import { saveAgreementInfo, savePdf, deleteDetail, deleteChallenge, deleteAgreement } from './actions'
+import { saveAgreementInfo, savePdf, deleteDetail, deleteChallenge, deleteAgreement, saveReport, deleteReport } from './actions'
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'ฉบับร่าง', in_progress: 'กำลังดำเนินการ', evaluated: 'ประเมินแล้ว',
@@ -38,11 +37,13 @@ export default async function PaAdmin({
   const cur = (wanted ? await getAgreementById(wanted) : null) ?? agreements[0] ?? null
   const curId = cur ? Number(cur.id) : 0
 
-  const [details, challenges, overview] = await Promise.all([
+  const [details, challenges, overview, reports] = await Promise.all([
     curId ? getPaDetails(curId) : Promise.resolve([]),
     curId ? getPaChallenges(curId) : Promise.resolve([]),
     getIndicatorOverviewGrouped(curId, true),   // รวมฉบับร่าง — หลังบ้านต้องเห็นของตัวเองครบ
+    cur ? getReportsOfYear(Number(cur.fiscal_year)) : Promise.resolve({ salary: null, pa: null }),
   ])
+  const reportCount = REPORT_KIND_LIST.filter((k) => reports[k]).length
   const totalWorks = [...overview.values()]
     .reduce((s, rows) => s + rows.reduce((a, r) => a + Number(r.work_count), 0), 0)
 
@@ -311,6 +312,104 @@ export default async function PaAdmin({
     </section>
   )
 
+  /* ---------------- รายงานหน้าเดียว ---------------- */
+  const panel5 = cur && (
+    <section className="card-soft p-5 md:p-7">
+      <div className="mb-5">
+        <h2 className="font-bold text-[16px]">🗂️ รายงานหน้าเดียว ปีงบประมาณ {cur.fiscal_year}</h2>
+        <p className="text-[12.5px] text-ink-muted mt-0.5">
+          ไฟล์ทั้งสองนี้จะไปแสดงบน <b>หน้าแรก</b> ของเว็บ พร้อมปุ่มดูเต็มและดาวน์โหลด
+          · วางลิงก์จาก Google Drive (รูปภาพ หรือ PDF)
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-5">
+        {REPORT_KIND_LIST.map((k) => {
+          const meta = REPORT_KINDS[k]
+          const row = reports[k]
+          const href = row ? fileUrl({ source: row.file_source, ref: row.file_ref }) : null
+          return (
+            <AjaxForm key={k} action={saveReport} successMsg="บันทึกรายงานสำเร็จ!"
+              className="rounded-[1.6rem] border-2 border-[color:var(--border)] p-5 flex flex-col">
+              <input type="hidden" name="fiscal_year" value={cur.fiscal_year} />
+              <input type="hidden" name="kind" value={k} />
+
+              <div className="flex items-start gap-3">
+                <span className={`w-12 h-12 rounded-2xl grid place-items-center text-[22px] shrink-0 ${
+                  meta.tone === 'gold' ? 'bg-sunny-soft' : 'bg-primary-soft'}`}>{meta.icon}</span>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-[14.5px] leading-snug">{meta.title}</h3>
+                  <p className="text-[11.5px] text-ink-muted mt-0.5">ปีงบประมาณ {cur.fiscal_year}</p>
+                </div>
+              </div>
+
+              {row && href ? (
+                <div className="mt-4 flex items-center gap-3 rounded-2xl bg-primary-soft/40 border border-[color:var(--border)] px-4 py-3">
+                  <span className="w-12 h-12 rounded-xl grad-bg text-white grid place-items-center text-[20px] shrink-0">
+                    {row.file_kind === 'image' ? '🖼️' : '📕'}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[12.5px] font-bold truncate">{row.title || meta.short}</span>
+                    <span className="block text-[11px] text-ink-muted">
+                      {row.file_kind === 'image' ? 'รูปภาพ' : 'PDF'} ·{' '}
+                      {row.file_source === 'drive' ? 'Google Drive' : 'ไฟล์ในระบบ'}
+                    </span>
+                  </span>
+                  <a href={href} target="_blank" rel="noreferrer" className="btn btn-white btn-sm shrink-0">เปิดดู</a>
+                </div>
+              ) : (
+                <p className="mt-4 rounded-2xl border-2 border-dashed border-[color:var(--border)] px-4 py-5 text-center text-[12.5px] text-ink-muted">
+                  ยังไม่ได้เพิ่มไฟล์ของปีนี้
+                </p>
+              )}
+
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="lbl" htmlFor={`rf_${k}`}>ลิงก์ไฟล์รายงาน (Google Drive)</label>
+                  <DriveLinkInput name="file" id={`rf_${k}`}
+                    defaultSource={row?.file_source ?? null} defaultRef={row?.file_ref ?? null} />
+                </div>
+                <div>
+                  <label className="lbl" htmlFor={`rk_${k}`}>ชนิดไฟล์</label>
+                  <select className="inp" id={`rk_${k}`} name="file_kind" defaultValue={row?.file_kind ?? 'image'}>
+                    <option value="image">รูปภาพ (.jpg .png .webp)</option>
+                    <option value="pdf">PDF</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="lbl" htmlFor={`rn_${k}`}>คำอธิบายใต้การ์ด (ไม่บังคับ)</label>
+                  <input className="inp" id={`rn_${k}`} name="note" maxLength={500}
+                    defaultValue={row?.note ?? ''} placeholder="เช่น สรุปผลการประเมินรอบที่ 2" />
+                </div>
+              </div>
+
+              <p className="text-[11px] text-ink-muted mt-3">
+                ตั้งค่าไฟล์ใน Drive เป็น “ทุกคนที่มีลิงก์” ก่อน ไม่งั้นผู้เยี่ยมชมจะมองไม่เห็น
+              </p>
+
+              <div className="flex gap-2 justify-end mt-4 pt-4 border-t border-[color:var(--divider)]">
+                {row && (
+                  <ConfirmDelete action={deleteReport.bind(null, Number(row.id))}
+                    name={`${meta.short} ปีงบประมาณ ${cur.fiscal_year}`}
+                    className="btn btn-danger btn-sm">🗑️ ลบ</ConfirmDelete>
+                )}
+                <SubmitButton>💾 บันทึก</SubmitButton>
+              </div>
+            </AjaxForm>
+          )
+        })}
+      </div>
+
+      <div className="mt-5 flex items-center gap-3 rounded-2xl bg-sunny-soft/50 border border-[color:var(--gold-line)] px-4 py-3">
+        <span className="text-[18px] shrink-0">💡</span>
+        <p className="text-[12px] text-ink-soft leading-relaxed">
+          ปีงบประมาณที่เลือกได้บนหน้าแรก อ้างอิงจากปีที่มีข้อตกลง PA ในหน้านี้
+          ถ้าต้องการเพิ่มปี ให้สร้างข้อตกลงปีนั้นก่อน
+        </p>
+      </div>
+    </section>
+  )
+
   return (
     <NewYearProvider nextYear={nextYear} years={years} autoOpen={sp.new === '1'}>
     <div className="flex flex-col gap-0">
@@ -377,8 +476,9 @@ export default async function PaAdmin({
               '🧑‍🏫 ตอนที่ 1 · ข้อมูลผู้จัดทำ',
               '🎯 ตอนที่ 3 · ประเด็นท้าทาย',
               '📕 ไฟล์ PDF',
+              `🗂️ รายงานหน้าเดียว (${reportCount}/2)`,
             ]}
-            panels={[panel2, panel1, panel3, panel4]}
+            panels={[panel2, panel1, panel3, panel4, panel5]}
           />
 
           {/* ===== ดูหน้าเว็บ + โซนอันตราย ===== */}

@@ -3,6 +3,7 @@ import { all, one, scalar } from './db'
 import type {
   Profile, Domain, Indicator, Work, WorkImage, WorkFile, Agreement,
   PaDetail, PaChallenge, SelfDev, Award, ItemImage, ItemFile, Education, CareerPath,
+  OnePageReport, ReportKind,
 } from './types'
 
 /* ---------------- โปรไฟล์ / ประวัติ ---------------- */
@@ -548,3 +549,52 @@ export const getRecentWorksIncludingDraft = (limit = 6) =>
              JOIN domains d ON d.id = i.domain_id
              WHERE w.deleted_at IS NULL
              ORDER BY w.work_date DESC, w.id DESC LIMIT ?`, [limit])
+
+/* ============================================================ รายงานหน้าเดียว */
+
+/** ชนิดรายงานที่รองรับ + ชื่อมาตรฐานที่ใช้แสดงผล (ตรงกับเว็บ PHP) */
+export const REPORT_KINDS = {
+  salary: {
+    title: 'รายงานผลการประเมินการปฏิบัติงาน เพื่อเลื่อนเงินเดือน',
+    short: 'เลื่อนเงินเดือน',
+    icon: '💰',
+    tone: 'gold',
+  },
+  pa: {
+    title: 'รายงานผลการปฏิบัติงานตามข้อตกลง (PA)',
+    short: 'ตามข้อตกลง PA',
+    icon: '📊',
+    tone: 'primary',
+  },
+} as const
+
+export const REPORT_KIND_LIST = ['salary', 'pa'] as const
+
+/**
+ * รายงานทั้งสองชนิดของปีงบประมาณหนึ่ง — คืนเป็น { salary, pa } เสมอ
+ * (คิวรีเดียวได้ครบ ไม่ต้องยิงสองรอบ)
+ */
+export const getReportsOfYear = async (
+  fiscalYear: number,
+): Promise<Record<ReportKind, OnePageReport | null>> => {
+  const rows = await all<OnePageReport>(
+    'SELECT * FROM one_page_reports WHERE fiscal_year = ?', [fiscalYear])
+  const out: Record<ReportKind, OnePageReport | null> = { salary: null, pa: null }
+  for (const r of rows) {
+    if (r.kind in out) out[r.kind] = r
+  }
+  return out
+}
+
+export const getReport = (fiscalYear: number, kind: ReportKind) =>
+  one<OnePageReport>('SELECT * FROM one_page_reports WHERE fiscal_year = ? AND kind = ?',
+    [fiscalYear, kind])
+
+/** จำนวนรายงานที่อัปไว้แล้ว แยกตามปีงบประมาณ → { 2569: 2, 2568: 1 } */
+export const getReportCountByYear = async (): Promise<Record<number, number>> => {
+  const rows = await all<{ fiscal_year: number; c: number }>(
+    'SELECT fiscal_year, COUNT(*) AS c FROM one_page_reports GROUP BY fiscal_year')
+  const out: Record<number, number> = {}
+  for (const r of rows) out[Number(r.fiscal_year)] = Number(r.c)
+  return out
+}
