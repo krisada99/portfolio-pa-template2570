@@ -30,3 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_reports_year ON one_page_reports(fiscal_year);
 -- ---------- ลิงก์ท้ายเว็บที่แก้ข้อความได้ ----------
 ALTER TABLE teacher_profile ADD COLUMN footer_link_url TEXT NOT NULL DEFAULT '';
 ALTER TABLE teacher_profile ADD COLUMN footer_link_label TEXT NOT NULL DEFAULT '';
+
+-- ---------- ลิงก์เว็บไซต์ประกอบข้อตกลง PA (ตอนที่ 3) ----------
+ALTER TABLE pa_agreements ADD COLUMN link_url TEXT NOT NULL DEFAULT '';
+ALTER TABLE pa_agreements ADD COLUMN link_label TEXT NOT NULL DEFAULT '';

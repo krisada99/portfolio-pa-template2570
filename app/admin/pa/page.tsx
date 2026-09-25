@@ -275,9 +275,9 @@ export default async function PaAdmin({
   const panel4 = cur && (
     <section className="card-soft p-5 md:p-7">
       <div className="mb-5">
-        <h2 className="font-bold text-[16px]">📕 ไฟล์แบบบันทึกข้อตกลง PA1/ส</h2>
+        <h2 className="font-bold text-[16px]">📕 เอกสารและลิงก์ประกอบข้อตกลง</h2>
         <p className="text-[12.5px] text-ink-muted mt-0.5">
-          วางลิงก์ไฟล์ PDF ฉบับลงนามจาก Google Drive ของปีงบประมาณ {cur.fiscal_year}
+          ไฟล์ PDF ฉบับลงนาม และลิงก์เว็บไซต์ประกอบ ของปีงบประมาณ {cur.fiscal_year} · แสดงในตอนที่ 3 บนหน้าเว็บ
         </p>
       </div>
       <AjaxForm action={savePdf} successMsg="บันทึกไฟล์ PDF สำเร็จ!" className="max-w-lg">
@@ -305,8 +305,31 @@ export default async function PaAdmin({
         <p className="text-[11.5px] text-ink-muted mt-2">
           ลิงก์เดิมจะถูกแทนที่ · ตั้งค่าไฟล์ใน Drive เป็น “ทุกคนที่มีลิงก์” ก่อน · ไฟล์นี้ผูกกับปีงบประมาณ {cur.fiscal_year} เท่านั้น
         </p>
+
+        <div className="mt-6 pt-5 border-t border-[color:var(--divider)]">
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="w-9 h-9 rounded-xl grid place-items-center text-base bg-primary-soft shrink-0">🔗</span>
+            <h3 className="font-bold text-[14px]">ลิงก์เว็บไซต์ประกอบข้อตกลง</h3>
+            <span className="flex-1 h-px bg-[color:var(--divider)]"></span>
+          </div>
+
+          <label className="lbl" htmlFor="a_link">ลิงก์ปลายทาง</label>
+          <input className="inp" id="a_link" name="link_url" type="url" maxLength={255}
+            placeholder="https://sites.google.com/view/..."
+            defaultValue={cur.link_url ?? ''} />
+          <p className="text-[11.5px] text-ink-muted mt-1.5">
+            ใส่ได้ทุกเว็บ เช่น Google Site, เว็บผลงาน, คลิปวิดีโอ · เว้นว่าง = ไม่แสดงปุ่มนี้
+          </p>
+
+          <label className="lbl mt-4" htmlFor="a_link_label">ข้อความบนปุ่ม</label>
+          <input className="inp" id="a_link_label" name="link_label" maxLength={80}
+            placeholder="เปิดเว็บไซต์ประกอบ"
+            defaultValue={cur.link_label ?? ''} />
+          <p className="text-[11.5px] text-ink-muted mt-1.5">เว้นว่าง = ใช้คำว่า “เปิดเว็บไซต์ประกอบ”</p>
+        </div>
+
         <div className="flex justify-end mt-6 pt-5 border-t border-[color:var(--divider)]">
-          <SubmitButton>💾 บันทึกไฟล์ PDF</SubmitButton>
+          <SubmitButton>💾 บันทึกไฟล์ PDF และลิงก์</SubmitButton>
         </div>
       </AjaxForm>
     </section>
@@ -475,7 +498,7 @@ export default async function PaAdmin({
               `📚 ตอนที่ 2 · ตัวชี้วัดและผลงาน (${details.length}/15)`,
               '🧑‍🏫 ตอนที่ 1 · ข้อมูลผู้จัดทำ',
               '🎯 ตอนที่ 3 · ประเด็นท้าทาย',
-              '📕 ไฟล์ PDF',
+              '📕 ไฟล์ PDF · ลิงก์',
               `🗂️ รายงานหน้าเดียว (${reportCount}/2)`,
             ]}
             panels={[panel2, panel1, panel3, panel4, panel5]}

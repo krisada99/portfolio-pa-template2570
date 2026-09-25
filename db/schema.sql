@@ -197,6 +197,9 @@ CREATE TABLE pa_agreements (
   pdf_source        TEXT CHECK(pdf_source IN ('drive','static')) NULL,
   pdf_ref           TEXT NULL,
   pdf_name          TEXT NULL,
+  -- ลิงก์เว็บไซต์ประกอบข้อตกลง (แสดงในตอนที่ 3) · link_label ว่าง = "เปิดเว็บไซต์ประกอบ"
+  link_url          TEXT NOT NULL DEFAULT '',
+  link_label        TEXT NOT NULL DEFAULT '',
   note              TEXT NOT NULL DEFAULT '',
   created_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

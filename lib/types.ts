@@ -51,6 +51,8 @@ export interface Agreement {
   teaching_hours: number; support_hours: number; status: string
   evaluation_score: number | null; evaluation_result: string | null
   pdf_source: MediaSource | null; pdf_ref: string | null; pdf_name: string | null
+  /** ลิงก์เว็บไซต์ประกอบข้อตกลง — เว็บที่ยังไม่ได้ migrate จะไม่มีคอลัมน์นี้ */
+  link_url?: string; link_label?: string
   note: string
   updated_at?: string
 }

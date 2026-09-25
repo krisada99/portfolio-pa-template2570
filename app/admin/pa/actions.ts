@@ -110,6 +110,19 @@ export async function saveAgreementInfo(f: FormData): Promise<Result> {
 
 /* ============================================================ ไฟล์ PDF (PA1/ส) */
 
+/**
+ * ลิงก์เว็บไซต์ประกอบข้อตกลง — รับเฉพาะ http/https
+ * ไม่มี https:// ให้เติมให้ · สคีมอื่น (เช่น javascript:) ตัดทิ้ง
+ */
+function paLinkUrl(f: FormData): string {
+  let url = str(f, 'link_url', 255)
+  if (!url) return ''
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) url = 'https://' + url.replace(/^\/+/, '')
+  if (!/^https?:\/\//i.test(url)) return ''
+  try { new URL(url) } catch { return '' }
+  return url.slice(0, 255)
+}
+
 export async function savePdf(f: FormData): Promise<Result> {
   await requireAdmin()
 
@@ -118,11 +131,19 @@ export async function savePdf(f: FormData): Promise<Result> {
   if (!cur) return { ok: false, error: 'ไม่พบข้อตกลงนี้' }
 
   const pdf = media(f, 'pdf')
-  if (!pdf.ref) return { ok: false, error: 'ยังไม่ได้วางลิงก์ไฟล์ PDF จาก Google Drive' }
+  // ไม่บังคับต้องมี PDF แล้ว — ครูอาจอยากใส่แค่ลิงก์เว็บไซต์ประกอบอย่างเดียว
+  if (!pdf.ref && !paLinkUrl(f)) {
+    return { ok: false, error: 'ใส่อย่างน้อยหนึ่งอย่าง: ลิงก์ไฟล์ PDF หรือลิงก์เว็บไซต์ประกอบ' }
+  }
 
   await db.execute({
-    sql: 'UPDATE pa_agreements SET pdf_source=?, pdf_ref=?, pdf_name=?, updated_at=? WHERE id=?',
-    args: [pdf.source, pdf.ref, str(f, 'pdf_name', 200) || 'แบบบันทึกข้อตกลง PA1/ส.pdf', now(), id],
+    sql: `UPDATE pa_agreements
+             SET pdf_source=?, pdf_ref=?, pdf_name=?, link_url=?, link_label=?, updated_at=?
+           WHERE id=?`,
+    args: [
+      pdf.source, pdf.ref, str(f, 'pdf_name', 200) || 'แบบบันทึกข้อตกลง PA1/ส.pdf',
+      paLinkUrl(f), str(f, 'link_label', 80), now(), id,
+    ],
   })
 
   await logAction('แก้ไขข้อตกลง PA', 'pa_agreements', id, `ไฟล์ PDF ปีงบประมาณ ${cur.fiscal_year}`)

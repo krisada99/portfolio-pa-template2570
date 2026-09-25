@@ -55,6 +55,11 @@ export default async function PaView({ year }: { year?: number }) {
     for (const r of rows) { if (r.pa) paFilled++; totalWorks += r.work_count }
   }
   const pdf = fileUrl({ source: cur.pdf_source, ref: cur.pdf_ref })
+
+  /* ลิงก์เว็บไซต์ประกอบข้อตกลง — รับเฉพาะ http/https กันลิงก์แปลกปลอม */
+  const rawLink = (cur.link_url ?? '').trim()
+  const paLink = /^https?:\/\//i.test(rawLink) ? rawLink : ''
+  const paLabel = (cur.link_label ?? '').trim() || 'เปิดเว็บไซต์ประกอบ'
   const others = agreements.filter((a) => a.id !== cur.id)
 
   const yearItems = agreements.map((a) => ({
@@ -253,7 +258,7 @@ export default async function PaView({ year }: { year?: number }) {
           <div>
             <span className="chip chip-accent">🎯 ตอนที่ 3</span>
             <h2 className="mt-3 text-[26px] md:text-[34px] font-extrabold leading-tight">ประเด็น<span className="grad-text">ท้าทาย</span> ปีงบประมาณ {cur.fiscal_year}</h2>
-            <p className="text-[13.5px] text-ink-muted">ประเด็นท้าทายในการพัฒนาผลลัพธ์การเรียนรู้ของผู้เรียน พร้อมเอกสารแบบบันทึกข้อตกลงฉบับเต็ม</p>
+            <p className="text-[13.5px] text-ink-muted">ประเด็นท้าทายในการพัฒนาผลลัพธ์การเรียนรู้ของผู้เรียน พร้อมเอกสารและลิงก์ประกอบข้อตกลง</p>
           </div>
 
           <div className="mt-7 grid lg:grid-cols-[1.25fr_.75fr] gap-5 items-start">
@@ -318,6 +323,17 @@ export default async function PaView({ year }: { year?: number }) {
                   <AdminOnly>
                     <Link href={`/admin/pa?id=${cur.id}`} className="btn btn-primary w-full mt-4 text-[13px]">📎 แนบไฟล์ PDF</Link>
                   </AdminOnly>
+                </div>
+              )}
+
+              {paLink && (
+                <div className="card-soft rounded-[2rem] p-6">
+                  <span className="w-14 h-14 rounded-2xl bg-primary-soft grid place-items-center text-[28px]">🔗</span>
+                  <h3 className="mt-4 text-[17px] font-extrabold leading-tight">เว็บไซต์ประกอบข้อตกลง</h3>
+                  <p className="mt-1 text-[12.5px] text-ink-muted">หลักฐานเพิ่มเติมของปีงบประมาณ {cur.fiscal_year}</p>
+                  <p className="mt-3 text-[11.5px] text-ink-muted break-all">{paLink}</p>
+                  <a href={paLink} target="_blank" rel="noopener noreferrer"
+                     className="btn btn-primary w-full mt-4 text-[13px]">{paLabel} →</a>
                 </div>
               )}
 
